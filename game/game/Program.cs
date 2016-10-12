@@ -93,7 +93,7 @@ namespace ConsoleApplication1
             {
                 case Status.Die: StatusDie();
                     break;
-                case Status.Idle:
+                case Status.Idle: StatusIdle();
                     break;
                 case Status.Move:
                     break;
@@ -113,6 +113,20 @@ namespace ConsoleApplication1
         void Respawn()
         {
             status = Status.Idle;
+            //need add new coordinates for respawn
+        }
+        void StatusIdle()
+        {
+            if (behav.Contains(Behavior.Agressive))
+            {
+                if (Target==null && whoAround.Count!=0)
+                {
+                    foreach (var anyone in whoAround)
+                    {
+
+                    }
+                } 
+            }
         }
         internal override void Do()
         {
