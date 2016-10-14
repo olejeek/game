@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Timers;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,7 +12,7 @@ namespace ConsoleApplication1
         static void Main(string[] args)
         {
             Location loc1 = new Location();
-            loc1.LocationLive();
+            loc1.Start();
             Console.Read();
         }
     }
@@ -31,7 +32,7 @@ namespace ConsoleApplication1
         protected Location loc; //location, where person are situated
         protected coord pos;    //position on the location
         protected Person Target;            //target for atack
-        internal DateTime timeForAction;    //time for person action
+        internal uint timeDelay;    //time for person action
         protected Dictionary<Person, int> whoAround;  //all persons, which person view
         public Person(int id, Location loc)                     //constructor of person
         {
@@ -42,10 +43,18 @@ namespace ConsoleApplication1
         virtual internal void Thinking()  //person thinking about next action
         {
             LookAround();
+            for (int i=0; i<whoAround.Count; i++)
+            {
+                Console.WriteLine("{0} see {1} on range2 {2}", this.locId,
+                    whoAround.ElementAt(i).Key.locId,
+                    whoAround.ElementAt(i).Value);
+            }
+            /*
             foreach (var p in whoAround)
             {
                 Console.WriteLine("{0} see {1} on range2 {2}", this.locId, p.Key.locId, p.Value);
             }
+            */
             if (hp <= 0) status = Status.Die;
         }
         void LookAround()  //search persons around person and square range
@@ -106,7 +115,7 @@ namespace ConsoleApplication1
         {
             if (nextAction!=Respawn)
             {
-                timeForAction = loc.now.AddMilliseconds(respTime);
+                timeDelay = respTime;
                 nextAction = Respawn;
             }
         }
@@ -174,29 +183,47 @@ namespace ConsoleApplication1
     class Location
     {
         internal LinkedList<Person> persons { get; private set; }
-        internal DateTime now;
+        Timer locTime;
         bool Enabled;
         public Location()
         {
-            Enabled = true;
+
+            Enabled = false;
             persons = new LinkedList<Person>();
+            locTime = new Timer();
+            locTime.Elapsed += Tick;
             for (int i = 0; i < 2; i++)
             {
                 persons.AddLast(new Mob(i, this, (i % 2 == 0 ? "Agressive" : "")));
             }
         }
-        public void LocationLive()
+
+        internal void Start()
         {
-            while (Enabled)
+            locTime.AutoReset = true;
+            locTime.Interval = 1000 / 60;
+            locTime.Enabled = true;
+            Enabled = true;
+        }
+        internal void Stop()
+        {
+            locTime.Enabled = false;
+            Enabled = false;
+        }
+        internal void Status()
+        {
+            Console.WriteLine(Enabled.ToString());
+        }
+        private void Tick (object sender, ElapsedEventArgs e)
+        {
+            foreach (Person p in persons)
             {
-                now = DateTime.Now;
-                foreach (Person p in persons)
-                {
-                    //if (now <= p.timeForAction) p.Do();
-                    p.Thinking();
-                }
+                p.timeDelay--;
+                if (p.timeDelay<=0) p.Do();
+                p.Thinking();
             }
         }
+
     }
     struct coord
     {
