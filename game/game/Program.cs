@@ -20,26 +20,29 @@ namespace game
     {
         internal LinkedList<Person> persons { get; private set; }
         Timer locTime;
-        internal List<Damage> damOnLoc;          //damage on location
+        internal List<Skill> skillOnLoc;          //skills used on map
         bool Enabled;
         public Location()
         {
 
             Enabled = false;
             persons = new LinkedList<Person>();
-            damOnLoc = new List<Damage>();
+            skillOnLoc = new List<Skill>();
             locTime = new Timer();
             locTime.Elapsed += Tick;
             for (int i = 0; i < 10; i++)
             {
-                persons.AddLast(new Mob(i, this, (i % 2 == 0 ? "Agressive" : "")));
+                string mobInfo = String.Format("{0} {0},{0},{0},{0},{0},{0} ", i+10);
+                mobInfo += (i % 2 == 0 ? "Agressive" : "");
+                //string mobInfo = (i % 2 == 0 ? "Agressive" : "");
+                persons.AddLast(new Mob(i, this, mobInfo));
             }
         }
 
         internal void Start()
         {
             locTime.AutoReset = true;
-            locTime.Interval = 1000 / 60;
+            locTime.Interval = 6000 / 60;
             locTime.Enabled = true;
             Enabled = true;
         }
@@ -54,7 +57,6 @@ namespace game
         }
         private void Tick (object sender, ElapsedEventArgs e)
         {
-            //Console.WriteLine("New Frame.");
             foreach (Person p in persons)
             {
                 
@@ -62,30 +64,20 @@ namespace game
                 p.timeDelay--;
                 if (p.timeDelay <= 0) p.Do();
             }
-            //damOnLoc.ForEach((dam) =>
-            //{
-            //    dam.timeDelay--;
-            //    if (dam.timeDelay<0)
-            //    {
-            //        if (dam is PersonalDamage)
-            //        {
-            //            ((PersonalDamage)dam).to.TakeDamage(dam);
-            //            damOnLoc.Remove(dam);
-            //        }
-            //    }
-            //});
-            for (int i = 0; i < damOnLoc.Count; i++)
+            for (int i = 0; i < skillOnLoc.Count; i++)
             {
-                damOnLoc[i].timeDelay--;
-                if (damOnLoc[i].timeDelay < 0)
+                skillOnLoc[i].timeDelay--;
+                if (skillOnLoc[i].timeDelay < 0)
                 {
-                    if (damOnLoc[i] is PersonalDamage)
+                    if (skillOnLoc[i] is PersonalSkill)
                     {
-                        ((PersonalDamage)damOnLoc[i]).to.TakeDamage(damOnLoc[i]);
-                        damOnLoc.RemoveAt(i);
+                        ((PersonalSkill)skillOnLoc[i]).targetCast.TakeDamage(skillOnLoc[i]);
+                        skillOnLoc[i].SkillEffect();
+                        //damOnLoc[i] = null;
                     }
                 }
             }
+            skillOnLoc.RemoveAll((skill) => !skill.enabled);
         }
 
     }
