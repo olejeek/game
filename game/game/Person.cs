@@ -309,12 +309,12 @@ namespace game
 
         internal override void Do()
         {
-            nextAction?.Invoke();
-            //if (nextAction!=null) nextAction();
+            //nextAction?.Invoke();
+            if (nextAction!=null) nextAction();
         }
         internal override void Atack()
         {
-            loc.skillOnLoc.Add(new PhisAtack(this, Target));
+            loc.skillOnLoc.Add(new PhisAtack(this, Target, 1));
             //loc.skillOnLoc.Add(new PersonalDamage(this, Target, atack, 0));
             //Console.WriteLine("Mob #{0} atack mob #{1}", locId, Target.locId);
             nextAction = null;
