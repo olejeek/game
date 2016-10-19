@@ -83,9 +83,10 @@ namespace game
         abstract internal void Do();        //Person action
         abstract internal void Step();      //person take step
         abstract internal void Atack();     //person take phisical damage
-
+        /* TakeDamage mathod
         internal void TakeDamage(Skill skill)
         {
+            
             if (skill is PhisAtack)
             {
                 if (r.Next(100) > (100 - pdodge))
@@ -121,6 +122,7 @@ namespace game
             //hp -= skill.damage;
             //Console.WriteLine("Mob #{0} damaged mob #{1} to {2} hp", skill.whoCast.locId, locId, skill.damage);
         }
+        */
     }
 
     class Mob : Person
@@ -314,25 +316,27 @@ namespace game
         }
         void Respawn()
         {
-            status = Status.Idle;
+            loc.skillOnLoc.Add(new Respawn(this, this, 2));
             nextAction = null;
-            hp = maxHP;
-            mp = maxMP;
-            pos = new coord(r.Next(5), r.Next(5));
-            Console.WriteLine("Mob # {0} respawned in {1}", this.locId, pos);
+            //Console.WriteLine("Mob # {0} respawned in {1}", this.locId, pos);
         }
 
         internal override void Do()
         {
             //nextAction?.Invoke();
-            if (nextAction!=null) nextAction();
+            if (nextAction != null)
+            {
+                nextAction();
+                nextAction = null;
+            }
         }
         internal override void Atack()
         {
-            loc.skillOnLoc.Add(new PhisAtack(this, Target, 1));
+            loc.skillOnLoc.Add(new PhisAtack(this, Target));
+            //loc.skillOnLoc.Add(new FireBolt(this, Target, 2));
             //loc.skillOnLoc.Add(new PersonalDamage(this, Target, atack, 0));
             //Console.WriteLine("Mob #{0} atack mob #{1}", locId, Target.locId);
-            nextAction = null;
+            //nextAction = null;
         }
         internal override void Step()
         {
@@ -349,7 +353,7 @@ namespace game
             //    case WorldSide.NW: pos = pos.newCoord(-1, 1); break;
             //}
             //Console.WriteLine("Mob #{0} go to coord:{1}", locId, pos);
-            nextAction = null;
+            //nextAction = null;
         }
     }
     class Player : Person

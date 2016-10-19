@@ -40,11 +40,41 @@ namespace game
         }
     }
 
+    class Respawn:PersonalSkill
+    {
+        internal Respawn(Person whoCast, Person TargetCast, int level)
+            :base(whoCast, TargetCast, level)
+        {
+            enabled = true;
+            timeDelay = 0;
+            damage = 0;
+        }
+        internal override void SkillEffect()
+        {
+            if (targetCast is Mob)
+            {
+                targetCast.hp = targetCast.maxHP;
+                targetCast.mp = targetCast.maxMP;
+                targetCast.pos = new coord(targetCast.r.Next(5), targetCast.r.Next(5));
+                targetCast.status = Person.Status.Idle;
+            }
+            else if (level == 0)
+            {
+                targetCast.hp = 1;
+                targetCast.hp = (int)(targetCast.maxHP * (0.15 * level + 0.05));
+                targetCast.status = Person.Status.Idle;
+            }
+            Console.WriteLine("Mob #{0} respawned in {1}. HP:{2}/{3}",
+                    targetCast.locId, targetCast.pos, targetCast.hp, targetCast.maxHP);
+            enabled = false;
+        }
+    }
     class Move:PersonalSkill
     {
-        internal Move(Person who):base(who, who)
+        internal Move(Person who):base(who, who, 1)
         {
             damage = 0;
+            timeDelay = 0;
             enabled = true;
         }
         internal override void SkillEffect()
@@ -67,7 +97,7 @@ namespace game
     class PhisAtack:PersonalSkill
     {
         internal bool critical;
-        internal PhisAtack(Person whoCast, Person targetCast, int level):base(whoCast, targetCast, level)
+        internal PhisAtack(Person whoCast, Person targetCast):base(whoCast, targetCast, 1)
         {
             enabled = true;
             damage = whoCast.atack;
@@ -110,17 +140,23 @@ namespace game
     class FireBolt:PersonalSkill
     {
         int times;
-        internal FireBolt(Person whoCast, Person targetCast, int level):base(whoCast, targetCast,level)
+        internal FireBolt(Person whoCast, Person targetCast, int level)
+            :base(whoCast, targetCast,level)
         {
             enabled = true;
             times = level;
             timeDelay = 30;
             damage = whoCast.r.Next(whoCast.minMatk, whoCast.maxMatk);
+            Console.WriteLine("Mob #{0} cast FireBolt lvl. {1} to mob #{2}.",
+                whoCast.locId, level, targetCast.locId);
         }
         internal override void SkillEffect()
         {
             times--;
             timeDelay = 10;
+            targetCast.hp -= damage;
+            Console.WriteLine("FireBolt damaged mob #{0} to {1} hp.",
+                targetCast.locId, damage);
             if (times == 0) enabled = false;
             
         }
