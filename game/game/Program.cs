@@ -30,7 +30,7 @@ namespace game
             skillOnLoc = new List<Skill>();
             locTime = new Timer();
             locTime.Elapsed += Tick;
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 2; i++)
             {
                 string mobInfo = String.Format("{0} {0},{0},{0},{0},{0},{0} ", i+10);
                 mobInfo += (i % 2 == 0 ? "Agressive" : "");
@@ -42,7 +42,7 @@ namespace game
         internal void Start()
         {
             locTime.AutoReset = true;
-            locTime.Interval = 6000 / 60;
+            locTime.Interval = 1000 / 60;
             locTime.Enabled = true;
             Enabled = true;
         }
@@ -69,12 +69,7 @@ namespace game
                 skillOnLoc[i].timeDelay--;
                 if (skillOnLoc[i].timeDelay < 0)
                 {
-                    if (skillOnLoc[i] is PersonalSkill)
-                    {
-                        ((PersonalSkill)skillOnLoc[i]).targetCast.TakeDamage(skillOnLoc[i]);
-                        skillOnLoc[i].SkillEffect();
-                        //damOnLoc[i] = null;
-                    }
+                    if (skillOnLoc[i] is PersonalSkill) skillOnLoc[i].SkillEffect();
                 }
             }
             skillOnLoc.RemoveAll((skill) => !skill.enabled);
@@ -107,9 +102,10 @@ namespace game
         {
             return !(p1==p2);
         }
-        public coord newCoord (int dx, int dy)
+        public void newCoord (int dx, int dy)
         {
-            return new coord(x + dx, y + dy);
+            x += dx;
+            y += dy;
         }
         public int direction (coord p1)
         {

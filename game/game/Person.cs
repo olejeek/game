@@ -17,21 +17,24 @@ namespace game
         internal int[] stats;
         //----------------------------------------------
         //------------ Second person stats -------------
-        protected int hp;       //hit points
-        protected int mp;       //mana points
-        protected float mspd;   //move speed
-        protected float aspd;   //atack speed
+        internal int maxHP;    //max hit points
+        internal int hp;       //current hit points
+        internal int maxMP;    //max mana points
+        internal int mp;       //mana points
+        internal float cspd;   //cast speed
+        internal float mspd;   //move speed
+        internal float aspd;   //atack speed
         internal float arng;    //atack range
         protected float vrng;   //view range
         internal int atack;    //atack
         internal int minMatk;  //min magic atack
         internal int maxMatk;  //max magic atack    
         internal int hit;      //chance of hit
-        protected int flee;     //chance of dodge
+        internal int flee;     //chance of dodge
         internal int crit;     //chance of critical atack
-        protected int def;      //phisical defence 
-        protected int mdef;     //magical defence
-        protected int pdodge;   //chance of perfect dodge
+        internal int def;      //phisical defence 
+        internal int mdef;     //magical defence
+        internal int pdodge;   //chance of perfect dodge
         //----------------------------------------------
         //------------ Location interplay vars ---------
         internal Random r;
@@ -96,12 +99,14 @@ namespace game
                 }
                 else
                 {
-                    int atackHit = ((PhisAtack)skill).hit;
+                    int atackHit = skill.whoCast.hit;
 
                     if (r.Next(atackHit) > atackHit - flee)
                     {
                         int d = skill.damage - def;
-                        hp -= (d > 0) ? d : 1;
+                        //d = d > 0 ? d : 1;
+                        //hp -= d;
+                        hp -= (d = d > 0 ? d : 1);
                         Console.WriteLine("Mob #{0} damaged the mob #{1} to {2} hp",
                             skill.whoCast.locId, this.locId, d);
                     }
@@ -141,10 +146,21 @@ namespace game
                 foreach (var str in behavs)
                     this.behav.Add((Behavior)Enum.Parse(typeof(Behavior), str, true));
             }
-            hp =Level * 50 + 10 * stats[(int)Stats.Vit] + stats[(int)Stats.Str]+10;
-            mp = 10 * stats[(int)Stats.Int] + stats[(int)Stats.Dex];
-            mspd = stats[(int)Stats.Int] / 500 + stats[(int)Stats.Dex] / 200;
+            maxHP =Level * 50 + 10 * stats[(int)Stats.Vit] + stats[(int)Stats.Str]+10;
+            hp = maxHP;
+            maxMP = 10 * stats[(int)Stats.Int] + stats[(int)Stats.Dex];
+            mp = maxMP;
+            cspd = stats[(int)Stats.Int] / 500 + stats[(int)Stats.Dex] / 200;
             aspd = stats[(int)Stats.Agi] + stats[(int)Stats.Dex] / 5;
+            /*
+             * NEED ADD WEAPON coefficient (aspd = aspd*weap_coef*lh_coef)
+             * lh_coef - left hand coefficient 
+             * where weap_coef = 0.9 for dagger
+             * weap_coef = 0.8 for sword
+             * weap_coef = 0.7 for axe
+             * weap_coef = 0.6 for spear and two-handed weapon
+             */
+            mspd = 2;
             vrng = 5;
             arng = 1.5F;
             atack = (arng < 2.5F)? (stats[(int)Person.Stats.Str] +
@@ -167,8 +183,7 @@ namespace game
             //vrng = 5;
             //arng = 1.5F;
             //atack = 10;
-            //aspd = 5;
-            mspd = 2;
+            //aspd = 1;
             pos = new coord(r.Next(5), r.Next(5));
             Console.WriteLine("New mob add with #{0} in {1}", locId, pos);
 
@@ -233,7 +248,7 @@ namespace game
                     else                                        //if range to target less then atack range
                     {
                         status = Status.Atack;
-                        timeDelay = (int)(60 / aspd);
+                        timeDelay = (int)(120 - aspd);
                         Direction = (WorldSide)pos.direction(Target.pos);
                         nextAction = Atack;
                     }
@@ -270,7 +285,7 @@ namespace game
                     else                                        //if range to target less then atack range
                     {
                         status = Status.Atack;
-                        timeDelay = (int)(60 / aspd);
+                        timeDelay = (int)(120 - aspd);
                         Direction = (WorldSide)pos.direction(Target.pos);
                         nextAction = Atack;
                     }
@@ -284,7 +299,6 @@ namespace game
             //if (Target.status == Status.Die)
             if (Target==null)
             {
-                Target = null;
                 nextAction = null;
                 status = Status.Idle;
             }
@@ -294,7 +308,7 @@ namespace game
                 else
                 {
                     nextAction = Atack;
-                    timeDelay = (int)(60 / aspd);
+                    timeDelay = (int)(120 - aspd);
                 }
             }
         }
@@ -302,7 +316,8 @@ namespace game
         {
             status = Status.Idle;
             nextAction = null;
-            hp = 100;
+            hp = maxHP;
+            mp = maxMP;
             pos = new coord(r.Next(5), r.Next(5));
             Console.WriteLine("Mob # {0} respawned in {1}", this.locId, pos);
         }
@@ -321,18 +336,19 @@ namespace game
         }
         internal override void Step()
         {
-            switch (Direction)
-            {
-                case WorldSide.N: pos = pos.newCoord(0, 1); break;
-                case WorldSide.NE: pos = pos.newCoord(1, 1); break;
-                case WorldSide.E: pos = pos.newCoord(1, 0); break;
-                case WorldSide.SE: pos = pos.newCoord(1, -1); break;
-                case WorldSide.S: pos = pos.newCoord(0, -1); break;
-                case WorldSide.SW: pos = pos.newCoord(-1, -1); break;
-                case WorldSide.W: pos = pos.newCoord(-1, 0); break;
-                case WorldSide.NW: pos = pos.newCoord(-1, 1); break;
-            }
-            Console.WriteLine("Mob #{0} go to coord:{1}", locId, pos);
+            loc.skillOnLoc.Add(new Move(this));
+            //switch (Direction)
+            //{
+            //    case WorldSide.N: pos = pos.newCoord(0, 1); break;
+            //    case WorldSide.NE: pos = pos.newCoord(1, 1); break;
+            //    case WorldSide.E: pos = pos.newCoord(1, 0); break;
+            //    case WorldSide.SE: pos = pos.newCoord(1, -1); break;
+            //    case WorldSide.S: pos = pos.newCoord(0, -1); break;
+            //    case WorldSide.SW: pos = pos.newCoord(-1, -1); break;
+            //    case WorldSide.W: pos = pos.newCoord(-1, 0); break;
+            //    case WorldSide.NW: pos = pos.newCoord(-1, 1); break;
+            //}
+            //Console.WriteLine("Mob #{0} go to coord:{1}", locId, pos);
             nextAction = null;
         }
     }
