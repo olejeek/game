@@ -53,14 +53,18 @@ namespace game
         {
             if (targetCast is Mob)
             {
-                targetCast.hp = targetCast.maxHP;
+                targetCast.ChangeHP(targetCast, targetCast.maxHP);
+                //targetCast.hp = targetCast.maxHP;
                 targetCast.mp = targetCast.maxMP;
                 targetCast.loc.ChangeCoord(targetCast, new coord(targetCast.r.Next(5), targetCast.r.Next(5)));
                 //targetCast.pos = new coord(targetCast.r.Next(5), targetCast.r.Next(5));
                 targetCast.status = Person.Status.Idle;
             }
-            else if (level == 0) targetCast.hp = 1;
-            else targetCast.hp = (int)(targetCast.maxHP * (0.1 * level + 0.1));
+            //else if (level == 0) targetCast.hp = 1;
+            else if (level == 0) targetCast.ChangeHP(targetCast, 1);
+            else
+                //targetCast.hp = (int)(targetCast.maxHP * (0.1 * level + 0.1));
+                targetCast.ChangeHP(whoCast, (int)(targetCast.maxHP * (0.1 * level + 0.1)));
                 targetCast.status = Person.Status.Idle;
             Console.WriteLine("Mob #{0} respawned in {1}. HP:{2}/{3}",
                     targetCast.locId, targetCast.pos, targetCast.hp, targetCast.maxHP);
@@ -84,7 +88,8 @@ namespace game
                     targetCast.locId, whoCast.locId);
             else if (critical)
             {
-                targetCast.hp -= damage;
+                //targetCast.hp -= damage;
+                targetCast.ChangeHP(whoCast, -damage);
                 Console.WriteLine("Mob #{0} inflicted critical damage on mob #{1} to {2} hp",
                     whoCast.locId, targetCast.locId, damage);
             }
@@ -97,7 +102,8 @@ namespace game
                     int d = damage - targetCast.def;
                     //d = d > 0 ? d : 1;
                     //hp -= d;
-                    targetCast.hp -= (d = d > 0 ? d : 1);
+                    //targetCast.hp -= (d = d > 0 ? d : 1);
+                    targetCast.ChangeHP(whoCast, -(d = d > 0 ? d : 1));
                     Console.WriteLine("Mob #{0} damaged the mob #{1} to {2} hp",
                         whoCast.locId, targetCast.locId, d);
                 }
@@ -127,7 +133,8 @@ namespace game
         {
             times--;
             timeDelay = 10;
-            targetCast.hp -= damage;
+            //targetCast.hp -= damage;
+            targetCast.ChangeHP(whoCast, -damage);
             Console.WriteLine("FireBolt damaged mob #{0} to {1} hp.",
                 targetCast.locId, damage);
             if (times == 0) enabled = false;

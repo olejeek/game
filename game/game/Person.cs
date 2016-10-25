@@ -18,7 +18,7 @@ namespace game
         //----------------------------------------------
         //------------ Second person stats -------------
         internal int maxHP;    //max hit points
-        internal int hp;       //current hit points
+        public int hp { get; protected set; }       //current hit points
         internal int maxMP;    //max mana points
         internal int mp;       //mana points
         internal float cspd;   //cast speed
@@ -64,7 +64,11 @@ namespace game
         virtual internal void Thinking()  //person thinking about next action
         {
             LookAround();
-            if (hp <= 0) status = Status.Die;
+            if (hp <= 0)
+            {
+                hp = 0;
+                status = Status.Die;
+            }
             if (Target != null && (Target.status == Status.Die || !whoAround.ContainsKey(Target))) Target = null;
         }
         void LookAround()  //search persons around person and square range
@@ -103,6 +107,10 @@ namespace game
         abstract internal void Do();        //Person action
         abstract internal void Step();      //person take step
         abstract internal void Atack();     //person take phisical damage
+        internal void ChangeHP (Person who, int dHP)
+        {
+            hp += dHP;
+        }
         /* TakeDamage mathod
         internal void TakeDamage(Skill skill)
         {
