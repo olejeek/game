@@ -55,42 +55,15 @@ namespace game
             {
                 targetCast.hp = targetCast.maxHP;
                 targetCast.mp = targetCast.maxMP;
-                targetCast.pos = new coord(targetCast.r.Next(5), targetCast.r.Next(5));
+                targetCast.loc.ChangeCoord(targetCast, new coord(targetCast.r.Next(5), targetCast.r.Next(5)));
+                //targetCast.pos = new coord(targetCast.r.Next(5), targetCast.r.Next(5));
                 targetCast.status = Person.Status.Idle;
             }
-            else if (level == 0)
-            {
-                targetCast.hp = 1;
-                targetCast.hp = (int)(targetCast.maxHP * (0.15 * level + 0.05));
+            else if (level == 0) targetCast.hp = 1;
+            else targetCast.hp = (int)(targetCast.maxHP * (0.1 * level + 0.1));
                 targetCast.status = Person.Status.Idle;
-            }
             Console.WriteLine("Mob #{0} respawned in {1}. HP:{2}/{3}",
                     targetCast.locId, targetCast.pos, targetCast.hp, targetCast.maxHP);
-            enabled = false;
-        }
-    }
-    class Move:PersonalSkill
-    {
-        internal Move(Person who):base(who, who, 1)
-        {
-            damage = 0;
-            timeDelay = 0;
-            enabled = true;
-        }
-        internal override void SkillEffect()
-        {
-            switch (targetCast.Direction)
-            {
-                case Person.WorldSide.N: targetCast.pos.newCoord(0, 1); break;
-                case Person.WorldSide.NE: targetCast.pos.newCoord(1, 1); break;
-                case Person.WorldSide.E: targetCast.pos.newCoord(1, 0); break;
-                case Person.WorldSide.SE: targetCast.pos.newCoord(1, -1); break;
-                case Person.WorldSide.S: targetCast.pos.newCoord(0, -1); break;
-                case Person.WorldSide.SW: targetCast.pos.newCoord(-1, -1); break;
-                case Person.WorldSide.W: targetCast.pos.newCoord(-1, 0); break;
-                case Person.WorldSide.NW: targetCast.pos.newCoord(-1, 1); break;
-            }
-            Console.WriteLine("Mob #{0} go to coord:{1}", targetCast.locId, targetCast.pos);
             enabled = false;
         }
     }

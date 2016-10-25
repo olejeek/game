@@ -18,18 +18,45 @@ namespace game
     }
     class Location
     {
-        internal LinkedList<Person> persons { get; private set; }
+        //-----map size------
+        internal int mapSizeX = 5;
+        internal int mapSizeY = 5;
+        //-----------------
+
+        //internal LinkedList<Person> persons { get; private set; }
         Timer locTime;
         internal List<Skill> skillOnLoc;          //skills used on map
+        //--------------------------------------
+        internal List<Person>[,] personsOnMap;
+        //--------------------------------------
         bool Enabled;
         public Location()
         {
 
             Enabled = false;
-            persons = new LinkedList<Person>();
+            //persons = new LinkedList<Person>();
+            //--------------------------------------
+            personsOnMap = new List<Person>[mapSizeX, mapSizeY];
+            for (int x = 0; x < mapSizeX; x++)
+            {
+                for (int y = 0; y < mapSizeY; y++)
+                {
+                    personsOnMap[x, y] = new List<Person>();
+                }
+            }
+            Mob mob;
+            for (int i=0;i<10;i++)
+            {
+                string mobInfo = String.Format("{0} {0},{0},{0},{0},{0},{0} ", i + 10);
+                mobInfo += (i % 2 == 0 ? "Agressive" : "");
+                mob = new Mob(i, this, mobInfo);
+                personsOnMap[mob.pos.x, mob.pos.y].Add(mob);
+            }
+            //--------------------------------------
             skillOnLoc = new List<Skill>();
             locTime = new Timer();
             locTime.Elapsed += Tick;
+            /*
             for (int i = 0; i < 2; i++)
             {
                 string mobInfo = String.Format("{0} {0},{0},{0},{0},{0},{0} ", i+10);
@@ -37,8 +64,8 @@ namespace game
                 //string mobInfo = (i % 2 == 0 ? "Agressive" : "");
                 persons.AddLast(new Mob(i, this, mobInfo));
             }
+            */
         }
-
         internal void Start()
         {
             locTime.AutoReset = true;
@@ -55,16 +82,43 @@ namespace game
         {
             Console.WriteLine("Location Status: {0}", Enabled.ToString());
         }
+
+        internal void ChangeCoord(Person who, coord vector)
+        {
+            coord nCoord = who.pos + vector;
+            nCoord.x = (nCoord.x <= 0) ? 0 : nCoord.x;
+            nCoord.x = (nCoord.x >= mapSizeX) ? mapSizeX-1 : nCoord.x;
+            nCoord.y = (nCoord.y <= 0) ? 0 : nCoord.y;
+            nCoord.y = (nCoord.y >= mapSizeY) ? mapSizeY-1 : nCoord.y;
+            personsOnMap[who.pos.x, who.pos.y].Remove(who);
+            who.pos=nCoord;
+            personsOnMap[who.pos.x, who.pos.y].Add(who);
+        }
+
         private void Tick (object sender, ElapsedEventArgs e)
         {
-            foreach (Person p in persons)
+            foreach (List<Person> list in personsOnMap)
             {
-                
-                p.Thinking();
-                p.timeDelay--;
-                if (p.timeDelay <= 0) p.Do();
+                if (list.Count != 0)
+                {
+                    for (int i=0; i<list.Count; i++)
+                    {
+                        list[i].Thinking();
+                        list[i].timeDelay--;
+                        if (list[i].timeDelay <= 0) list[i].Do();
+                    }
+                }
             }
-            for (int i = 0; i < skillOnLoc.Count; i++)
+                /*
+                foreach (Person p in persons)
+                {
+
+                    p.Thinking();
+                    p.timeDelay--;
+                    if (p.timeDelay <= 0) p.Do();
+                }
+                */
+                for (int i = 0; i < skillOnLoc.Count; i++)
             {
                 skillOnLoc[i].timeDelay--;
                 if (skillOnLoc[i].timeDelay < 0)
@@ -78,8 +132,8 @@ namespace game
     }
     struct coord
     {
-        int x;
-        int y;
+        internal int x;
+        internal int y;
         public coord(int x, int y)
         {
             this.x = x;
@@ -94,6 +148,10 @@ namespace game
         {
             return new coord(p2.x - p1.x, p2.y - p2.y);
         }
+        public static coord operator + (coord p1, coord p2)
+        {
+            return new coord(p1.x + p2.x, p1.y + p2.y);
+        }
         public static bool operator ==(coord p1, coord p2)
         {
             return (p1.x==p2.x && p1.y==p2.y);
@@ -102,10 +160,24 @@ namespace game
         {
             return !(p1==p2);
         }
-        public void newCoord (int dx, int dy)
+        public override int GetHashCode()
         {
-            x += dx;
-            y += dy;
+            return x * 1000 + y;
+        }
+        public override bool Equals(object obj)
+        {
+            if (obj.GetType() != this.GetType()) return false;
+            else
+            {
+                coord objCoord = (coord)obj;
+                return (this.x == objCoord.x && this.y == objCoord.y);
+            }
+            
+        }
+        public void newCoord (coord vector)
+        {
+            x += vector.x;
+            y += vector.y;
         }
         public int direction (coord p1)
         {

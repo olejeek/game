@@ -25,7 +25,7 @@ namespace game
         internal float mspd;   //move speed
         internal float aspd;   //atack speed
         internal float arng;    //atack range
-        protected float vrng;   //view range
+        protected int vrng;   //view range
         internal int atack;    //atack
         internal int minMatk;  //min magic atack
         internal int maxMatk;  //max magic atack    
@@ -42,7 +42,7 @@ namespace game
         internal int exp;       //person exp
         internal uint Id;       //id mob or player
         internal int locId;     //location person Id
-        protected Location loc; //location, where person are situated
+        internal Location loc; //location, where person are situated
         internal WorldSide Direction;       //direction, where person see
         internal coord pos;     //position on the location
         protected coord nextPos;    //coordinates to move
@@ -70,11 +70,31 @@ namespace game
         void LookAround()  //search persons around person and square range
         {
             whoAround.Clear();
+            int xmin = pos.x - vrng;
+            int xmax = pos.x + vrng;
+            int ymin = pos.y - vrng;
+            int ymax = pos.y + vrng;
+            for (int x = xmin < 0 ? 0 : xmin; x < (xmax > loc.mapSizeX ? loc.mapSizeX : xmax); x++)
+            {
+                for (int y= ymin < 0 ? 0 : ymin; y < (ymax > loc.mapSizeY ? loc.mapSizeY : ymax); y++)
+                {
+                    if (loc.personsOnMap[x,y].Count!=0)
+                    {
+                        foreach(Person p in loc.personsOnMap[x, y])
+                        {
+                            if (p!=this && p.status!= Status.Die)
+                            whoAround.Add(p, coord.Range(pos, p.pos));
+                        }
+                    }
+                }
+            }
+            /*
             foreach (Person p in loc.persons)
             {
                 int range2 = coord.Range(pos, p.pos);
                 if (range2 <= vrng * vrng && p != this && p.status!= Status.Die) whoAround.Add(p, range2);
             }
+            */
         }
         void Way()
         {
@@ -340,20 +360,20 @@ namespace game
         }
         internal override void Step()
         {
-            loc.skillOnLoc.Add(new Move(this));
-            //switch (Direction)
-            //{
-            //    case WorldSide.N: pos = pos.newCoord(0, 1); break;
-            //    case WorldSide.NE: pos = pos.newCoord(1, 1); break;
-            //    case WorldSide.E: pos = pos.newCoord(1, 0); break;
-            //    case WorldSide.SE: pos = pos.newCoord(1, -1); break;
-            //    case WorldSide.S: pos = pos.newCoord(0, -1); break;
-            //    case WorldSide.SW: pos = pos.newCoord(-1, -1); break;
-            //    case WorldSide.W: pos = pos.newCoord(-1, 0); break;
-            //    case WorldSide.NW: pos = pos.newCoord(-1, 1); break;
-            //}
-            //Console.WriteLine("Mob #{0} go to coord:{1}", locId, pos);
-            //nextAction = null;
+            //loc.skillOnLoc.Add(new Move(this));
+            switch (Direction)
+            {
+                case WorldSide.N: loc.ChangeCoord(this, new coord(0, 1)); break;
+                case WorldSide.NE: loc.ChangeCoord(this, new coord(1, 1)); break;
+                case WorldSide.E: loc.ChangeCoord(this, new coord(1, 0)); break;
+                case WorldSide.SE: loc.ChangeCoord(this, new coord(1, -1)); break;
+                case WorldSide.S: loc.ChangeCoord(this, new coord(0, -1)); break;
+                case WorldSide.SW: loc.ChangeCoord(this, new coord(-1, -1)); break;
+                case WorldSide.W: loc.ChangeCoord(this, new coord(-1, 0)); break;
+                case WorldSide.NW: loc.ChangeCoord(this, new coord(-1, 1)); break;
+            }
+            Console.WriteLine("Mob #{0} go to coord:{1}", locId, pos);
+            nextAction = null;
         }
     }
     class Player : Person
