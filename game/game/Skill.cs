@@ -21,6 +21,25 @@ namespace game
         }
         abstract internal void SkillEffect();
     }
+    abstract class SkillCreator
+    {
+        internal int CurLevel;
+        internal int MaxLevel;
+        internal int maxUseLevel;
+        internal int minUseLevel;
+        internal int castTime;
+        internal int addCastTime;
+        internal bool EnabledToUse;
+        protected bool bufSkill;
+        protected Person caster;
+        internal abstract bool Cast(int castLevel, object skillTarget);
+        internal abstract bool SkillUpdate();
+        public SkillCreator(Person caster, int currentLevel)
+        {
+            this.caster = caster;
+            this.CurLevel = currentLevel;
+        }
+    }
 
     abstract class PersonalSkill:Skill
     {
@@ -71,6 +90,33 @@ namespace game
             enabled = false;
         }
     }
+    class RespawnCreator:SkillCreator
+    {
+        public RespawnCreator(Person caster, int currentLevel):base(caster, currentLevel)
+        {
+            MaxLevel = 5;
+            bufSkill = true;
+            if (currentLevel > 0) EnabledToUse = true;
+            minUseLevel = 1;
+            maxUseLevel = currentLevel;
+            if (caster is Mob) castTime = ((Mob)caster).respTime;
+
+        }
+        internal override bool Cast(int castLevel, object skillTarget)
+        {
+            Person target = skillTarget as Person;
+            if (!EnabledToUse || target==null) return false;
+            caster.loc.skillOnLoc.Add(new Respawn(caster, target, castLevel));
+            return true;
+        }
+        internal override bool SkillUpdate()
+        {
+            if (CurLevel == MaxLevel) return false;
+            CurLevel++;
+            if (CurLevel > 0) EnabledToUse = true;
+            return true;
+        }
+    }
     class PhisAtack:PersonalSkill
     {
         internal bool critical;
@@ -116,6 +162,30 @@ namespace game
             enabled = false;
         }
     }
+    class PhisAtackCreator : SkillCreator
+    {
+        public PhisAtackCreator(Person caster, int currentLevel=1):base(caster,1)
+        {
+            MaxLevel = 1;
+            bufSkill = false;
+            if (currentLevel > 0) EnabledToUse = true;
+            minUseLevel = currentLevel;
+            maxUseLevel = currentLevel;
+            castTime = (int)(120-caster.aspd);
+
+        }
+        internal override bool Cast(int castLevel, object skillTarget)
+        {
+            Person target = skillTarget as Person;
+            if (!EnabledToUse || target == null) return false;
+            caster.loc.skillOnLoc.Add(new PhisAtack(caster, target));
+            return true;
+        }
+        internal override bool SkillUpdate()
+        {
+            return false;
+        }
+    }
     class FireBolt:PersonalSkill
     {
         int times;
@@ -139,6 +209,33 @@ namespace game
                 targetCast.locId, damage);
             if (times == 0) enabled = false;
             
+        }
+    }
+    class FireBoltCreator : SkillCreator
+    {
+        public FireBoltCreator(Person caster, int currentLevel):base(caster, currentLevel)
+        {
+            MaxLevel = 10;
+            bufSkill = false;
+            if (currentLevel > 0) EnabledToUse = true;
+            minUseLevel = 1;
+            maxUseLevel = currentLevel;
+            if (caster is Mob) castTime = ((Mob)caster).respTime;
+
+        }
+        internal override bool Cast(int castLevel, object skillTarget)
+        {
+            Person target = skillTarget as Person;
+            if (!EnabledToUse || target == null) return false;
+            caster.loc.skillOnLoc.Add(new Respawn(caster, target, castLevel));
+            return true;
+        }
+        internal override bool SkillUpdate()
+        {
+            if (CurLevel == MaxLevel) return false;
+            CurLevel++;
+            if (CurLevel > 0) EnabledToUse = true;
+            return true;
         }
     }
 }

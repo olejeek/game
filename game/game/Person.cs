@@ -157,7 +157,7 @@ namespace game
     {
         enum Behavior { Agressive, FeelCast, Helpful, ChangeTarget, Looter };
         List<Behavior> behav;   //mob behaviors
-        int respTime;           //mob respawn time
+        public int respTime { get; private set; }           //mob respawn time
         public Mob(int id, Location loc, string mobInfo) : base(id, loc)
         {
             Level = 1;
