@@ -27,14 +27,20 @@ namespace game
         internal int MaxLevel;
         internal int maxUseLevel;
         internal int minUseLevel;
+        protected int castLevel;
         internal int castTime;
         internal int addCastTime;
         internal bool EnabledToUse;
-        internal int castRange;
+        private int castrange;
+        public int castRange
+        {
+            get { return castrange * castrange; }
+            protected set { castrange = value; } 
+        }
         internal bool bufSkill;
         protected Person caster;
 
-        internal abstract bool EndCast(int castLevel, object skillTarget);
+        internal abstract bool EndCast();
         internal abstract int StartCast(int castLevel, object SkillTarget);
         internal abstract bool SkillUpdate();
         public SkillCreator(Person caster, int currentLevel)
@@ -95,6 +101,7 @@ namespace game
     }
     class RespawnCreator : SkillCreator
     {
+        Person target;
         private RespawnCreator(Person caster, int currentLevel):base(caster, currentLevel)
         {
             MaxLevel = 5;
@@ -111,15 +118,17 @@ namespace game
         }
         internal override int StartCast(int castLevel, object SkillTarget)
         {
-            Person target = SkillTarget as Person;
-            Console.WriteLine("Mob #{0} start cast to mob #{1} FireBolt lvl.{2}", caster.locId, target.locId, castLevel);
+            target = SkillTarget as Person;
+            this.castLevel = castLevel;
+            Console.WriteLine("Mob #{0} start cast to mob #{1} Respawn lvl.{2}", caster.locId, target.locId, castLevel);
+            if (caster is Mob) return ((Mob)caster).respTime;
             return (int)((castTime + addCastTime * castLevel) / caster.cspd);
         }
-        internal override bool EndCast(int castLevel, object skillTarget)
+        internal override bool EndCast()
         {
-            Person target = skillTarget as Person;
             if (!EnabledToUse || target==null) return false;
             caster.loc.skillOnLoc.Add(new Respawn(caster, target, castLevel));
+            target = null;
             return true;
         }
         internal override bool SkillUpdate()
@@ -132,6 +141,70 @@ namespace game
         public static RespawnCreator AddSkill(Person caster, int currentLevel)
         {
             return new RespawnCreator(caster, currentLevel);
+        }
+    }
+
+    class Move : AreaSkill
+    {
+        internal Move(Person whoCast, coord newCoord) : base(whoCast, newCoord, 1)
+        {
+            enabled = true;
+            timeDelay = 0;
+        }
+        internal override void SkillEffect()
+        {
+            coord delta;
+            switch (whoCast.Direction)
+            {
+                case WorldSide.N: delta = new coord(0, 1); break;
+                case WorldSide.NE: delta = new coord(1, 1); break;
+                case WorldSide.E: delta = new coord(1, 0); break;
+                case WorldSide.SE: delta = new coord(1, -1); break;
+                case WorldSide.S: delta = new coord(0, -1); break;
+                case WorldSide.SW: delta = new coord(-1, -1); break;
+                case WorldSide.W: delta = new coord(-1, 0); break;
+                case WorldSide.NW: delta = new coord(-1, 1); break;
+                default: delta = new coord(0, 0); break;
+            }
+            whoCast.loc.ChangeCoord(whoCast,delta);
+            Console.WriteLine("Mob #{0} go to coord:{1}", whoCast.locId, whoCast.pos);
+            enabled = false;
+        }
+    }
+    class MoveCreator : SkillCreator
+    {
+        coord target;
+        private MoveCreator(Person caster, int currentLevel = 1) : base(caster, 1)
+        {
+            MaxLevel = 1;
+            bufSkill = false;
+            if (currentLevel > 0) EnabledToUse = true;
+            minUseLevel = currentLevel;
+            maxUseLevel = currentLevel;
+
+        }
+        internal override int StartCast(int castLevel, object SkillTarget)
+        {
+            target = SkillTarget as coord;
+            caster.Direction = (WorldSide)caster.pos.direction(target);
+            this.castLevel = castLevel;
+            Console.WriteLine("Mob #{0} go to {1}", caster.locId, caster.Direction);
+            return (int)(120 - caster.mspd);
+        }
+        internal override bool EndCast()
+        {
+            if (!EnabledToUse || target == null) return false;
+            caster.loc.skillOnLoc.Add(new Move(caster, target));
+            target = null;
+            return true;
+        }
+        internal override bool SkillUpdate()
+        {
+            return false;
+        }
+        public static MoveCreator AddSkill(Person caster, int currentLevel)
+        {
+            return new MoveCreator(caster, currentLevel);
         }
     }
 
@@ -182,6 +255,7 @@ namespace game
     }
     class PhisAtackCreator : SkillCreator
     {
+        Person target;
         private PhisAtackCreator(Person caster, int currentLevel=1):base(caster,1)
         {
             MaxLevel = 1;
@@ -194,15 +268,16 @@ namespace game
         }
         internal override int StartCast(int castLevel, object SkillTarget)
         {
-            Person target = SkillTarget as Person;
+            target = SkillTarget as Person;
+            this.castLevel = castLevel;
             Console.WriteLine("Mob #{0} start cast to mob #{1} FireBolt lvl.{2}", caster.locId, target.locId, castLevel);
             return (int)(120 - caster.aspd);
         }
-        internal override bool EndCast(int castLevel, object skillTarget)
+        internal override bool EndCast()
         {
-            Person target = skillTarget as Person;
             if (!EnabledToUse || target == null) return false;
             caster.loc.skillOnLoc.Add(new PhisAtack(caster, target));
+            target = null;
             return true;
         }
         internal override bool SkillUpdate()
@@ -242,6 +317,7 @@ namespace game
     }
     class FireBoltCreator : SkillCreator
     {
+        Person target;
         private FireBoltCreator(Person caster, int currentLevel):base(caster, currentLevel)
         {
             MaxLevel = 10;
@@ -256,15 +332,17 @@ namespace game
         }
         internal override int StartCast(int castLevel, object SkillTarget)
         {
-            Person target = SkillTarget as Person;
+            target = SkillTarget as Person;
+            this.castLevel = castLevel;
             Console.WriteLine("Mob #{0} start cast to mob #{1} FireBolt lvl.{2}", caster.locId, target.locId, castLevel);
             return (int)((castTime + addCastTime * castLevel) * caster.cspd);
         }
-        internal override bool EndCast(int castLevel, object skillTarget)
+        internal override bool EndCast()
         {
-            Person target = skillTarget as Person;
             if (!EnabledToUse || target == null) return false;
             caster.loc.skillOnLoc.Add(new FireBolt(caster, target, castLevel));
+            Console.WriteLine("{0} successfully end cast FireBolt lvl {1}", caster.locId, castLevel);
+            target = null;
             return true;
         }
         internal override bool SkillUpdate()

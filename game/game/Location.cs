@@ -36,7 +36,7 @@ namespace game
                 }
             }
             Mob mob;
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 2; i++)
             {
                 string mobInfo = String.Format("{0} {0},{0},{0},{0},{0},{0} ", i + 10);
                 mobInfo += (i % 2 == 0 ? "Agressive" : "");
@@ -94,9 +94,10 @@ namespace game
                 {
                     for (int i = 0; i < list.Count; i++)
                     {
-                        list[i].Thinking();
-                        list[i].timeDelay--;
-                        if (list[i].timeDelay <= 0) list[i].Do();
+                        list[i].Timed();
+                        //list[i].Thinking();
+                        //list[i].timeDelay--;
+                        //if (list[i].timeDelay <= 0) list[i].Do();
                     }
                 }
             }
@@ -121,7 +122,7 @@ namespace game
         }
 
     }
-    struct coord
+    class coord
     {
         internal int x;
         internal int y;
@@ -145,7 +146,8 @@ namespace game
         }
         public static bool operator ==(coord p1, coord p2)
         {
-            return (p1.x == p2.x && p1.y == p2.y);
+            if (p1.Equals(null) && p2.Equals(null)) return (p1.x == p2.x && p1.y == p2.y);
+            else return false;
         }
         public static bool operator !=(coord p1, coord p2)
         {
@@ -157,6 +159,7 @@ namespace game
         }
         public override bool Equals(object obj)
         {
+            if (obj == null) return false;
             if (obj.GetType() != this.GetType()) return false;
             else
             {

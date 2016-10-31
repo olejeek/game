@@ -6,11 +6,12 @@ using System.Threading.Tasks;
 
 namespace game
 {
+    internal enum WorldSide { N, NE, E, SE, S, SW, W, NW }
     abstract class Person
     {
         //------------ Other enums ---------------------
         internal enum Status { Die, Idle, Move, Atack, Cast }
-        internal enum WorldSide { N, NE, E, SE, S, SW, W, NW }
+        
         internal enum Stats { Str, Agi, Vit, Int, Dex, Luc}
         //----------------------------------------------
         //------------ Main person stats ---------------
@@ -37,6 +38,10 @@ namespace game
         internal int pdodge;   //chance of perfect dodge
         //----------------------------------------------
         //------------ Location interplay vars ---------
+        protected PhisAtackCreator mobAtack;    //base phis atack
+        protected RespawnCreator mobRespawn;    //respawn skill
+        protected SkillCreator castingSkill;    //var for now casting skill
+        protected MoveCreator mobMove;          //person moving skill
         internal Random r;
         internal int Level;     //person level
         internal int exp;       //person exp
@@ -60,14 +65,32 @@ namespace game
             this.locId = id;
             this.loc = loc;
             Direction = WorldSide.S;
+            mobAtack = PhisAtackCreator.AddSkill(this, 1);
+            mobRespawn = RespawnCreator.AddSkill(this, 1);
+            mobMove = MoveCreator.AddSkill(this, 1);
         }
-        virtual internal void Thinking()  //person thinking about next action
+        internal void Timed()
         {
+            Thinking();
+            timeDelay--;
+            if (timeDelay <= 0 && castingSkill != null) Do();
+        }
+        virtual protected void Thinking()  //person thinking about next action
+        {
+            if (status == Status.Die)
+            {
+                if (hp < 0) hp = 0;
+                return;
+            }
             LookAround();
             if (hp <= 0)
             {
                 hp = 0;
                 status = Status.Die;
+                Console.WriteLine("Person #{0} die!", locId);
+                castingSkill = mobRespawn;
+                timeDelay = mobRespawn.StartCast(0, this);
+                return;
             }
             if (Target != null && (Target.status == Status.Die || !whoAround.ContainsKey(Target))) Target = null;
         }
@@ -111,46 +134,6 @@ namespace game
         {
             hp += dHP;
         }
-        /* TakeDamage mathod
-        internal void TakeDamage(Skill skill)
-        {
-            
-            if (skill is PhisAtack)
-            {
-                if (r.Next(100) > (100 - pdodge))
-                    Console.WriteLine("Mob #{0} perfect dodged the atack mob #{1}", 
-                        this.locId, skill.whoCast.locId);
-                else if (((PhisAtack)skill).critical)
-                {
-                    hp -= skill.damage;
-                    Console.WriteLine("Mob #{0} inflicted critical damage on mob #{1} to {2} hp", 
-                        skill.whoCast.locId, locId, skill.damage);
-                }
-                else
-                {
-                    int atackHit = skill.whoCast.hit;
-
-                    if (r.Next(atackHit) > atackHit - flee)
-                    {
-                        int d = skill.damage - def;
-                        //d = d > 0 ? d : 1;
-                        //hp -= d;
-                        hp -= (d = d > 0 ? d : 1);
-                        Console.WriteLine("Mob #{0} damaged the mob #{1} to {2} hp",
-                            skill.whoCast.locId, this.locId, d);
-                    }
-                    else
-                    {
-                        Console.WriteLine("Mob #{0} missed the mob #{1}",
-                            skill.whoCast.locId, this.locId);
-                    }
-                }
-                
-            }
-            //hp -= skill.damage;
-            //Console.WriteLine("Mob #{0} damaged mob #{1} to {2} hp", skill.whoCast.locId, locId, skill.damage);
-        }
-        */
     }
 
     class Mob : Person
@@ -158,7 +141,6 @@ namespace game
         enum Behavior { Agressive, FeelCast, Helpful, ChangeTarget, Looter };
         List<Behavior> behav;   //mob behaviors
         List<SkillCreator> mobSkills;
-        SkillCreator castingSkill;
         public int respTime { get; private set; }           //mob respawn time
         public Mob(int id, Location loc, string mobInfo) : base(id, loc)
         {
@@ -166,7 +148,7 @@ namespace game
             exp = 10;
             this.behav = new List<Behavior>();
             mobSkills = new List<SkillCreator>();
-            mobSkills.Add(Program.SkillList["firebolt"](this, 5));
+            //mobSkills.Add(Program.SkillList["firebolt"](this, 5));
             string[] infos = mobInfo.Split(' ');
             Id = Convert.ToUInt32(infos[0]);
             string[] st = infos[1].Split(',');
@@ -223,15 +205,15 @@ namespace game
 
         }
 
-        internal override void Thinking()
+        protected override void Thinking()
         {
             base.Thinking();
             //Console.WriteLine("Mob #{0} status: {1}", locId, status);
             switch (status)
             {
-                case Status.Die:
-                    StatusDie();
-                    break;
+                //case Status.Die:
+                    //StatusDie();
+                    //break;
                 case Status.Idle:
                     StatusIdle();
                     break;
@@ -247,6 +229,7 @@ namespace game
             }
 
         }
+        /*
         void StatusDie()
         {
             if (nextAction != Respawn)
@@ -257,6 +240,7 @@ namespace game
                 Console.WriteLine("Mob #{0} die!", locId);
             }
         }
+        */
         void StatusIdle()
         {
             if (behav.Contains(Behavior.Agressive))         //if mob agressive
@@ -292,9 +276,11 @@ namespace game
                             else castingSkill = null;
                         }
                         status = Status.Move;
-                        timeDelay = (int)(60 / mspd);
-                        Direction = (WorldSide)pos.direction(Target.pos);
-                        nextAction = Step;
+                        //timeDelay = (int)(60 / mspd);
+                        //Direction = (WorldSide)pos.direction(Target.pos);
+                        //nextAction = Step;
+                        timeDelay = mobMove.StartCast(1, Target.pos);
+                        castingSkill = mobMove;
                     }
                     else                                        //if range to target less then atack range
                     {
@@ -369,7 +355,7 @@ namespace game
                 if (timeDelay > 0) return;
                 else
                 {
-                    if (castingSkill != null) castingSkill.EndCast(castingSkill.CurLevel, Target);
+                    if (castingSkill != null) castingSkill.EndCast();
                     if (Target != null)
                     {
                         if (whoAround[Target] > arng * arng)                 //if range to target more than atack range
@@ -418,12 +404,15 @@ namespace game
 
         internal override void Do()
         {
+            castingSkill.EndCast();
+            /*
             //nextAction?.Invoke();
             if (nextAction != null)
             {
                 nextAction();
                 nextAction = null;
             }
+            */
         }
         internal override void Atack()
         {
@@ -463,7 +452,7 @@ namespace game
             vrng = 5;
             pos = new coord(0, 0);
         }
-        internal override void Thinking()
+        protected override void Thinking()
         {
             base.Thinking();
         }
