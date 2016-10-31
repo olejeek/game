@@ -11,10 +11,9 @@ namespace game
     {
         //------------ Other enums ---------------------
         internal enum Status { Die, Idle, Move, Atack, Cast }
-        
-        internal enum Stats { Str, Agi, Vit, Int, Dex, Luc}
         //----------------------------------------------
         //------------ Main person stats ---------------
+        internal enum Stats { Str, Agi, Vit, Int, Dex, Luc }
         internal int[] stats;
         //----------------------------------------------
         //------------ Second person stats -------------
@@ -49,8 +48,8 @@ namespace game
         internal int locId;     //location person Id
         internal Location loc; //location, where person are situated
         internal WorldSide Direction;       //direction, where person see
-        internal coord pos;     //position on the location
-        protected coord nextPos;    //coordinates to move
+        internal Coord pos;     //position on the location
+        protected Coord nextPos;    //coordinates to move
         protected Person Target;            //target for atack
         internal int timeDelay;    //time for person action
         protected Dictionary<Person, int> whoAround;  //all persons, which person view
@@ -110,26 +109,13 @@ namespace game
                         foreach(Person p in loc.personsOnMap[x, y])
                         {
                             if (p!=this && p.status!= Status.Die)
-                            whoAround.Add(p, coord.Range(pos, p.pos));
+                            whoAround.Add(p, Coord.Range(pos, p.pos));
                         }
                     }
                 }
             }
-            /*
-            foreach (Person p in loc.persons)
-            {
-                int range2 = coord.Range(pos, p.pos);
-                if (range2 <= vrng * vrng && p != this && p.status!= Status.Die) whoAround.Add(p, range2);
-            }
-            */
-        }
-        void Way()
-        {
-
         }
         abstract internal void Do();        //Person action
-        abstract internal void Step();      //person take step
-        abstract internal void Atack();     //person take phisical damage
         internal void ChangeHP (Person who, int dHP)
         {
             hp += dHP;
@@ -196,11 +182,7 @@ namespace game
             pdodge = stats[(int)Person.Stats.Luc] / 10 + 1;
             respTime = 600;
             status = Status.Idle;
-            //vrng = 5;
-            //arng = 1.5F;
-            //atack = 10;
-            //aspd = 1;
-            pos = new coord(r.Next(5), r.Next(5));
+            pos = new Coord(r.Next(5), r.Next(5));
             Console.WriteLine("New mob add with #{0} in {1}", locId, pos);
 
         }
@@ -208,12 +190,8 @@ namespace game
         protected override void Thinking()
         {
             base.Thinking();
-            //Console.WriteLine("Mob #{0} status: {1}", locId, status);
             switch (status)
             {
-                //case Status.Die:
-                    //StatusDie();
-                    //break;
                 case Status.Idle:
                     StatusIdle();
                     break;
@@ -229,18 +207,6 @@ namespace game
             }
 
         }
-        /*
-        void StatusDie()
-        {
-            if (nextAction != Respawn)
-            {
-                timeDelay = respTime;
-                nextAction = Respawn;
-                Target = null;
-                Console.WriteLine("Mob #{0} die!", locId);
-            }
-        }
-        */
         void StatusIdle()
         {
             if (behav.Contains(Behavior.Agressive))         //if mob agressive
@@ -267,7 +233,7 @@ namespace game
                             if (castingSkill.castRange >= whoAround[Target])
                             {
                                 status = Status.Cast;
-                                //SkillCreator castingSkill = mobSkills[r.Next(mobSkills.Count - 1)];
+                                castingSkill = mobSkills[r.Next(mobSkills.Count - 1)];
                                 if (castingSkill.bufSkill) timeDelay = castingSkill.StartCast(castingSkill.CurLevel, this);
                                 else timeDelay = castingSkill.StartCast(castingSkill.CurLevel, Target);
                                 Console.WriteLine("LOL!");
@@ -276,18 +242,14 @@ namespace game
                             else castingSkill = null;
                         }
                         status = Status.Move;
-                        //timeDelay = (int)(60 / mspd);
-                        //Direction = (WorldSide)pos.direction(Target.pos);
-                        //nextAction = Step;
                         timeDelay = mobMove.StartCast(1, Target.pos);
                         castingSkill = mobMove;
                     }
                     else                                        //if range to target less then atack range
                     {
                         status = Status.Atack;
-                        timeDelay = (int)(120 - aspd);
-                        Direction = (WorldSide)pos.direction(Target.pos);
-                        nextAction = Atack;
+                        timeDelay = mobAtack.StartCast(1, Target);
+                        castingSkill = mobAtack;
                     }
                 }
             }
@@ -316,11 +278,11 @@ namespace game
                     {
                         if (mobSkills.Count != 0)
                         {
-                            SkillCreator castingSkill = mobSkills[r.Next(mobSkills.Count - 1)];
+                            castingSkill = mobSkills[r.Next(mobSkills.Count - 1)];
                             if (castingSkill.castRange >= whoAround[Target])
                             {
                                 status = Status.Cast;
-                                //SkillCreator castingSkill = mobSkills[r.Next(mobSkills.Count - 1)];
+                                castingSkill = mobSkills[r.Next(mobSkills.Count - 1)];
                                 if (castingSkill.bufSkill) timeDelay = castingSkill.StartCast(castingSkill.CurLevel, this);
                                 else timeDelay = castingSkill.StartCast(castingSkill.CurLevel, Target);
                                 return;
@@ -328,16 +290,14 @@ namespace game
                             else castingSkill = null;
                         }
                         status = Status.Move;
-                        timeDelay = (int)(60 / mspd);
-                        Direction = (WorldSide)pos.direction(Target.pos);
-                        nextAction = Step;
+                        timeDelay = mobMove.StartCast(1, Target.pos);
+                        castingSkill = mobMove;
                     }
                     else                                        //if range to target less then atack range
                     {
                         status = Status.Atack;
-                        timeDelay = (int)(120 - aspd);
-                        Direction = (WorldSide)pos.direction(Target.pos);
-                        nextAction = Atack;
+                        timeDelay = mobAtack.StartCast(1, Target);
+                        castingSkill = mobAtack;
                     }
                 }
                 
@@ -361,16 +321,20 @@ namespace game
                         if (whoAround[Target] > arng * arng)                 //if range to target more than atack range
                         {
                             status = Status.Move;
-                            timeDelay = (int)(60 / mspd);
-                            Direction = (WorldSide)pos.direction(Target.pos);
-                            nextAction = Step;
+                            //timeDelay = (int)(60 / mspd);
+                            //Direction = (WorldSide)pos.direction(Target.pos);
+                            //nextAction = Step;
+                            timeDelay = mobMove.StartCast(1, Target.pos);
+                            castingSkill = mobMove;
                         }
                         else                                        //if range to target less then atack range
                         {
                             status = Status.Atack;
-                            timeDelay = (int)(120 - aspd);
-                            Direction = (WorldSide)pos.direction(Target.pos);
-                            nextAction = Atack;
+                            //timeDelay = (int)(120 - aspd);
+                            //Direction = (WorldSide)pos.direction(Target.pos);
+                            //nextAction = Atack;
+                            timeDelay = mobAtack.StartCast(1, Target);
+                            castingSkill = mobAtack;
                         }
                     }
                 }
@@ -378,8 +342,6 @@ namespace game
         }
         void StatusAtack()
         {
-            //Console.WriteLine("Target status: {0}, my status: {1}", Target.status, status);
-            //if (Target.status == Status.Die)
             if (Target==null)
             {
                 nextAction = null;
@@ -390,8 +352,9 @@ namespace game
                 if (timeDelay > 0) return;
                 else
                 {
-                    nextAction = Atack;
-                    timeDelay = (int)(120 - aspd);
+                    status = Status.Atack;
+                    timeDelay = mobAtack.StartCast(1, Target);
+                    castingSkill = mobAtack;
                 }
             }
         }
@@ -399,45 +362,15 @@ namespace game
         {
             loc.skillOnLoc.Add(new Respawn(this, this, 2));
             nextAction = null;
-            //Console.WriteLine("Mob # {0} respawned in {1}", this.locId, pos);
         }
 
         internal override void Do()
         {
-            castingSkill.EndCast();
-            /*
-            //nextAction?.Invoke();
-            if (nextAction != null)
+            if (castingSkill != null)
             {
-                nextAction();
-                nextAction = null;
+                castingSkill.EndCast();
+                castingSkill = null;
             }
-            */
-        }
-        internal override void Atack()
-        {
-            loc.skillOnLoc.Add(new PhisAtack(this, Target));
-            //loc.skillOnLoc.Add(new FireBolt(this, Target, 2));
-            //loc.skillOnLoc.Add(new PersonalDamage(this, Target, atack, 0));
-            //Console.WriteLine("Mob #{0} atack mob #{1}", locId, Target.locId);
-            //nextAction = null;
-        }
-        internal override void Step()
-        {
-            //loc.skillOnLoc.Add(new Move(this));
-            switch (Direction)
-            {
-                case WorldSide.N: loc.ChangeCoord(this, new coord(0, 1)); break;
-                case WorldSide.NE: loc.ChangeCoord(this, new coord(1, 1)); break;
-                case WorldSide.E: loc.ChangeCoord(this, new coord(1, 0)); break;
-                case WorldSide.SE: loc.ChangeCoord(this, new coord(1, -1)); break;
-                case WorldSide.S: loc.ChangeCoord(this, new coord(0, -1)); break;
-                case WorldSide.SW: loc.ChangeCoord(this, new coord(-1, -1)); break;
-                case WorldSide.W: loc.ChangeCoord(this, new coord(-1, 0)); break;
-                case WorldSide.NW: loc.ChangeCoord(this, new coord(-1, 1)); break;
-            }
-            Console.WriteLine("Mob #{0} go to coord:{1}", locId, pos);
-            nextAction = null;
         }
     }
     class Player : Person
@@ -450,21 +383,13 @@ namespace game
             mspd = 2;
             arng = 1.5F;
             vrng = 5;
-            pos = new coord(0, 0);
+            pos = new Coord(0, 0);
         }
         protected override void Thinking()
         {
             base.Thinking();
         }
         internal override void Do()
-        {
-
-        }
-        internal override void Atack()
-        {
-
-        }
-        internal override void Step()
         {
 
         }

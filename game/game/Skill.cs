@@ -61,8 +61,8 @@ namespace game
     }
     abstract class AreaSkill : Skill
     {
-        protected coord targetCast;
-        public AreaSkill(Person whoCast, coord targetCast, int level):base(whoCast, level)
+        protected Coord targetCast;
+        public AreaSkill(Person whoCast, Coord targetCast, int level):base(whoCast, level)
         {
             this.targetCast = targetCast;
         }
@@ -82,16 +82,12 @@ namespace game
             if (targetCast is Mob)
             {
                 targetCast.ChangeHP(targetCast, targetCast.maxHP);
-                //targetCast.hp = targetCast.maxHP;
                 targetCast.mp = targetCast.maxMP;
-                targetCast.loc.ChangeCoord(targetCast, new coord(targetCast.r.Next(5), targetCast.r.Next(5)));
-                //targetCast.pos = new coord(targetCast.r.Next(5), targetCast.r.Next(5));
+                targetCast.loc.ChangeCoord(targetCast, new Coord(targetCast.r.Next(5), targetCast.r.Next(5)));
                 targetCast.status = Person.Status.Idle;
             }
-            //else if (level == 0) targetCast.hp = 1;
             else if (level == 0) targetCast.ChangeHP(targetCast, 1);
             else
-                //targetCast.hp = (int)(targetCast.maxHP * (0.1 * level + 0.1));
                 targetCast.ChangeHP(whoCast, (int)(targetCast.maxHP * (0.1 * level + 0.1)));
                 targetCast.status = Person.Status.Idle;
             Console.WriteLine("Mob #{0} respawned in {1}. HP:{2}/{3}",
@@ -146,34 +142,34 @@ namespace game
 
     class Move : AreaSkill
     {
-        internal Move(Person whoCast, coord newCoord) : base(whoCast, newCoord, 1)
+        internal Move(Person whoCast, Coord newCoord) : base(whoCast, newCoord, 1)
         {
             enabled = true;
             timeDelay = 0;
         }
         internal override void SkillEffect()
         {
-            coord delta;
+            Coord delta;
             switch (whoCast.Direction)
             {
-                case WorldSide.N: delta = new coord(0, 1); break;
-                case WorldSide.NE: delta = new coord(1, 1); break;
-                case WorldSide.E: delta = new coord(1, 0); break;
-                case WorldSide.SE: delta = new coord(1, -1); break;
-                case WorldSide.S: delta = new coord(0, -1); break;
-                case WorldSide.SW: delta = new coord(-1, -1); break;
-                case WorldSide.W: delta = new coord(-1, 0); break;
-                case WorldSide.NW: delta = new coord(-1, 1); break;
-                default: delta = new coord(0, 0); break;
+                case WorldSide.N: delta = new Coord(0, 1); break;
+                case WorldSide.NE: delta = new Coord(1, 1); break;
+                case WorldSide.E: delta = new Coord(1, 0); break;
+                case WorldSide.SE: delta = new Coord(1, -1); break;
+                case WorldSide.S: delta = new Coord(0, -1); break;
+                case WorldSide.SW: delta = new Coord(-1, -1); break;
+                case WorldSide.W: delta = new Coord(-1, 0); break;
+                case WorldSide.NW: delta = new Coord(-1, 1); break;
+                default: delta = new Coord(0, 0); break;
             }
             whoCast.loc.ChangeCoord(whoCast,delta);
-            Console.WriteLine("Mob #{0} go to coord:{1}", whoCast.locId, whoCast.pos);
+            Console.WriteLine("Mob #{0} come to coord:{1}", whoCast.locId, whoCast.pos);
             enabled = false;
         }
     }
     class MoveCreator : SkillCreator
     {
-        coord target;
+        Coord target;
         private MoveCreator(Person caster, int currentLevel = 1) : base(caster, 1)
         {
             MaxLevel = 1;
@@ -185,17 +181,16 @@ namespace game
         }
         internal override int StartCast(int castLevel, object SkillTarget)
         {
-            target = SkillTarget as coord;
+            target = SkillTarget as Coord;
             caster.Direction = (WorldSide)caster.pos.direction(target);
             this.castLevel = castLevel;
             Console.WriteLine("Mob #{0} go to {1}", caster.locId, caster.Direction);
-            return (int)(120 - caster.mspd);
+            return (int)(60 / caster.mspd);
         }
         internal override bool EndCast()
         {
             if (!EnabledToUse || target == null) return false;
             caster.loc.skillOnLoc.Add(new Move(caster, target));
-            target = null;
             return true;
         }
         internal override bool SkillUpdate()
@@ -225,7 +220,6 @@ namespace game
                     targetCast.locId, whoCast.locId);
             else if (critical)
             {
-                //targetCast.hp -= damage;
                 targetCast.ChangeHP(whoCast, -damage);
                 Console.WriteLine("Mob #{0} inflicted critical damage on mob #{1} to {2} hp",
                     whoCast.locId, targetCast.locId, damage);
@@ -263,14 +257,12 @@ namespace game
             if (currentLevel > 0) EnabledToUse = true;
             minUseLevel = currentLevel;
             maxUseLevel = currentLevel;
-            //castTime = (int)(120-caster.aspd);
-
         }
         internal override int StartCast(int castLevel, object SkillTarget)
         {
             target = SkillTarget as Person;
             this.castLevel = castLevel;
-            Console.WriteLine("Mob #{0} start cast to mob #{1} FireBolt lvl.{2}", caster.locId, target.locId, castLevel);
+            Console.WriteLine("Mob #{0} atack mob #{1}", caster.locId, target.locId);
             return (int)(120 - caster.aspd);
         }
         internal override bool EndCast()
@@ -307,7 +299,6 @@ namespace game
         {
             times--;
             timeDelay = 10;
-            //targetCast.hp -= damage;
             targetCast.ChangeHP(whoCast, -damage);
             Console.WriteLine("FireBolt damaged mob #{0} to {1} hp.",
                 targetCast.locId, damage);

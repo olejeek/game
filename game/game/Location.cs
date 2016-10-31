@@ -74,9 +74,9 @@ namespace game
             Console.WriteLine("Location Status: {0}", Enabled.ToString());
         }
 
-        internal void ChangeCoord(Person who, coord vector)
+        internal void ChangeCoord(Person who, Coord vector)
         {
-            coord nCoord = who.pos + vector;
+            Coord nCoord = who.pos + vector;
             nCoord.x = (nCoord.x <= 0) ? 0 : nCoord.x;
             nCoord.x = (nCoord.x >= mapSizeX) ? mapSizeX - 1 : nCoord.x;
             nCoord.y = (nCoord.y <= 0) ? 0 : nCoord.y;
@@ -95,123 +95,20 @@ namespace game
                     for (int i = 0; i < list.Count; i++)
                     {
                         list[i].Timed();
-                        //list[i].Thinking();
-                        //list[i].timeDelay--;
-                        //if (list[i].timeDelay <= 0) list[i].Do();
                     }
                 }
             }
-            /*
-            foreach (Person p in persons)
-            {
-
-                p.Thinking();
-                p.timeDelay--;
-                if (p.timeDelay <= 0) p.Do();
-            }
-            */
             for (int i = 0; i < skillOnLoc.Count; i++)
             {
                 skillOnLoc[i].timeDelay--;
                 if (skillOnLoc[i].timeDelay < 0)
                 {
-                    if (skillOnLoc[i] is PersonalSkill) skillOnLoc[i].SkillEffect();
+                    skillOnLoc[i].SkillEffect();
                 }
             }
             skillOnLoc.RemoveAll((skill) => !skill.enabled);
         }
 
     }
-    class coord
-    {
-        internal int x;
-        internal int y;
-        public coord(int x, int y)
-        {
-            this.x = x;
-            this.y = y;
-        }
-        public static int Range(coord p1, coord p2)
-        {
-            int r = (p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y);
-            return r;
-        }
-        public static coord operator -(coord p1, coord p2)
-        {
-            return new coord(p2.x - p1.x, p2.y - p2.y);
-        }
-        public static coord operator +(coord p1, coord p2)
-        {
-            return new coord(p1.x + p2.x, p1.y + p2.y);
-        }
-        public static bool operator ==(coord p1, coord p2)
-        {
-            if (p1.Equals(null) && p2.Equals(null)) return (p1.x == p2.x && p1.y == p2.y);
-            else return false;
-        }
-        public static bool operator !=(coord p1, coord p2)
-        {
-            return !(p1 == p2);
-        }
-        public override int GetHashCode()
-        {
-            return x * 1000 + y;
-        }
-        public override bool Equals(object obj)
-        {
-            if (obj == null) return false;
-            if (obj.GetType() != this.GetType()) return false;
-            else
-            {
-                coord objCoord = (coord)obj;
-                return (this.x == objCoord.x && this.y == objCoord.y);
-            }
-
-        }
-        public void newCoord(coord vector)
-        {
-            x += vector.x;
-            y += vector.y;
-        }
-        public int direction(coord p1)
-        {
-            float deltaX = p1.x - x;
-            float deltaY = p1.y - y;
-            float tga = deltaY / deltaX;
-            if (deltaX >= 0)
-            {
-                if (tga > 2.41421356 || tga < -2.41421356)
-                {
-                    if (tga > 0) return 0;
-                    else return 4;
-                }
-                else if (tga < 0.41421356 && tga > -0.41421356) return 2;
-                else
-                {
-                    if (tga > 0) return 1;
-                    else return 3;
-                }
-
-            }
-            else
-            {
-                if (tga > 2.41421356 || tga < -2.41421356)
-                {
-                    if (tga > 0) return 4;
-                    else return 0;
-                }
-                else if (tga < 0.41421356 && tga > -0.41421356) return 6;
-                else
-                {
-                    if (tga > 0) return 5;
-                    else return 7;
-                }
-
-            }
-        }
-        public override string ToString()
-        {
-            return "(" + x + ";" + y + ")";
-        }
-    }
+    
 }
