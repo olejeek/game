@@ -9,7 +9,7 @@ namespace game
     abstract class Person
     {
         //------------ Other enums ---------------------
-        internal enum Status { Die, Idle, Move, Atack }
+        internal enum Status { Die, Idle, Move, Atack, Cast }
         internal enum WorldSide { N, NE, E, SE, S, SW, W, NW }
         internal enum Stats { Str, Agi, Vit, Int, Dex, Luc}
         //----------------------------------------------
@@ -157,12 +157,16 @@ namespace game
     {
         enum Behavior { Agressive, FeelCast, Helpful, ChangeTarget, Looter };
         List<Behavior> behav;   //mob behaviors
+        List<SkillCreator> mobSkills;
+        SkillCreator castingSkill;
         public int respTime { get; private set; }           //mob respawn time
         public Mob(int id, Location loc, string mobInfo) : base(id, loc)
         {
             Level = 1;
             exp = 10;
             this.behav = new List<Behavior>();
+            mobSkills = new List<SkillCreator>();
+            mobSkills.Add(Program.SkillList["firebolt"](this, 5));
             string[] infos = mobInfo.Split(' ');
             Id = Convert.ToUInt32(infos[0]);
             string[] st = infos[1].Split(',');
@@ -180,7 +184,7 @@ namespace game
             hp = maxHP;
             maxMP = 10 * stats[(int)Stats.Int] + stats[(int)Stats.Dex];
             mp = maxMP;
-            cspd = stats[(int)Stats.Int] / 500 + stats[(int)Stats.Dex] / 200;
+            cspd = 1 + (stats[(int)Stats.Int] / 500 + stats[(int)Stats.Dex] / 200);
             aspd = stats[(int)Stats.Agi] + stats[(int)Stats.Dex] / 5;
             /*
              * NEED ADD WEAPON coefficient (aspd = aspd*weap_coef*lh_coef)
@@ -234,6 +238,9 @@ namespace game
                 case Status.Move:
                     StatusMove();
                     break;
+                case Status.Cast:
+                    StatusCast();
+                    break;
                 case Status.Atack:
                     StatusAtack();
                     break;
@@ -270,6 +277,20 @@ namespace game
                 {
                     if (whoAround[Target] > arng * arng)                 //if range to target more than atack range
                     {
+                        if (mobSkills.Count!=0)
+                        {
+                            castingSkill = mobSkills[r.Next(mobSkills.Count - 1)];
+                            if (castingSkill.castRange >= whoAround[Target])
+                            {
+                                status = Status.Cast;
+                                //SkillCreator castingSkill = mobSkills[r.Next(mobSkills.Count - 1)];
+                                if (castingSkill.bufSkill) timeDelay = castingSkill.StartCast(castingSkill.CurLevel, this);
+                                else timeDelay = castingSkill.StartCast(castingSkill.CurLevel, Target);
+                                Console.WriteLine("LOL!");
+                                return;
+                            }
+                            else castingSkill = null;
+                        }
                         status = Status.Move;
                         timeDelay = (int)(60 / mspd);
                         Direction = (WorldSide)pos.direction(Target.pos);
@@ -307,6 +328,19 @@ namespace game
                 {
                     if (whoAround[Target] > arng * arng)                 //if range to target more than atack range
                     {
+                        if (mobSkills.Count != 0)
+                        {
+                            SkillCreator castingSkill = mobSkills[r.Next(mobSkills.Count - 1)];
+                            if (castingSkill.castRange >= whoAround[Target])
+                            {
+                                status = Status.Cast;
+                                //SkillCreator castingSkill = mobSkills[r.Next(mobSkills.Count - 1)];
+                                if (castingSkill.bufSkill) timeDelay = castingSkill.StartCast(castingSkill.CurLevel, this);
+                                else timeDelay = castingSkill.StartCast(castingSkill.CurLevel, Target);
+                                return;
+                            }
+                            else castingSkill = null;
+                        }
                         status = Status.Move;
                         timeDelay = (int)(60 / mspd);
                         Direction = (WorldSide)pos.direction(Target.pos);
@@ -321,6 +355,39 @@ namespace game
                     }
                 }
                 
+            }
+        }
+        void StatusCast()
+        {
+            if (Target == null)
+            {
+                nextAction = null;
+                status = Status.Idle;
+            }
+            else
+            {
+                if (timeDelay > 0) return;
+                else
+                {
+                    if (castingSkill != null) castingSkill.EndCast(castingSkill.CurLevel, Target);
+                    if (Target != null)
+                    {
+                        if (whoAround[Target] > arng * arng)                 //if range to target more than atack range
+                        {
+                            status = Status.Move;
+                            timeDelay = (int)(60 / mspd);
+                            Direction = (WorldSide)pos.direction(Target.pos);
+                            nextAction = Step;
+                        }
+                        else                                        //if range to target less then atack range
+                        {
+                            status = Status.Atack;
+                            timeDelay = (int)(120 - aspd);
+                            Direction = (WorldSide)pos.direction(Target.pos);
+                            nextAction = Atack;
+                        }
+                    }
+                }
             }
         }
         void StatusAtack()
