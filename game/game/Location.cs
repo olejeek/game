@@ -19,18 +19,20 @@ namespace game
         internal List<Skill> skillOnLoc;          //skills used on map
         //--------------------------------------
         internal List<Person>[,] personsOnMap;
+        internal int Id;
         //--------------------------------------
         bool Enabled;
-        public Location()
+        public Location(int id)
         {
 
             Enabled = false;
+            this.Id = id;
             //persons = new LinkedList<Person>();
             //--------------------------------------
-            personsOnMap = new List<Person>[mapSizeX, mapSizeY];
-            for (int x = 0; x < mapSizeX; x++)
+            personsOnMap = new List<Person>[mapSizeX+1, mapSizeY+1];
+            for (int x = 0; x <= mapSizeX; x++)
             {
-                for (int y = 0; y < mapSizeY; y++)
+                for (int y = 0; y <= mapSizeY; y++)
                 {
                     personsOnMap[x, y] = new List<Person>();
                 }
@@ -47,15 +49,6 @@ namespace game
             skillOnLoc = new List<Skill>();
             locTime = new Timer();
             locTime.Elapsed += Tick;
-            /*
-            for (int i = 0; i < 2; i++)
-            {
-                string mobInfo = String.Format("{0} {0},{0},{0},{0},{0},{0} ", i+10);
-                mobInfo += (i % 2 == 0 ? "Agressive" : "");
-                //string mobInfo = (i % 2 == 0 ? "Agressive" : "");
-                persons.AddLast(new Mob(i, this, mobInfo));
-            }
-            */
         }
         internal void Start()
         {
@@ -74,16 +67,12 @@ namespace game
             Console.WriteLine("Location Status: {0}", Enabled.ToString());
         }
 
-        internal void ChangeCoord(Person who, Coord vector)
+        internal void ChangePosition(Person who, Coord vector)
         {
             Coord nCoord = who.pos + vector;
-            nCoord.x = (nCoord.x <= 0) ? 0 : nCoord.x;
-            nCoord.x = (nCoord.x >= mapSizeX) ? mapSizeX - 1 : nCoord.x;
-            nCoord.y = (nCoord.y <= 0) ? 0 : nCoord.y;
-            nCoord.y = (nCoord.y >= mapSizeY) ? mapSizeY - 1 : nCoord.y;
             personsOnMap[who.pos.x, who.pos.y].Remove(who);
             who.pos = nCoord;
-            personsOnMap[who.pos.x, who.pos.y].Add(who);
+            personsOnMap[nCoord.x, nCoord.y].Add(who);
         }
 
         private void Tick(object sender, ElapsedEventArgs e)

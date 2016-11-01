@@ -83,7 +83,8 @@ namespace game
             {
                 targetCast.ChangeHP(targetCast, targetCast.maxHP);
                 targetCast.mp = targetCast.maxMP;
-                targetCast.loc.ChangeCoord(targetCast, new Coord(targetCast.r.Next(5), targetCast.r.Next(5)));
+                targetCast.loc.ChangePosition(targetCast, 
+                    new Coord(targetCast.r.Next(targetCast.loc.mapSizeX), targetCast.r.Next(targetCast.loc.mapSizeY), targetCast.loc));
                 targetCast.status = Person.Status.Idle;
             }
             else if (level == 0) targetCast.ChangeHP(targetCast, 1);
@@ -149,20 +150,20 @@ namespace game
         }
         internal override void SkillEffect()
         {
-            Coord delta;
+            Coord delta = new Coord(0, 0, whoCast.loc);
             switch (whoCast.Direction)
             {
-                case WorldSide.N: delta = new Coord(0, 1); break;
-                case WorldSide.NE: delta = new Coord(1, 1); break;
-                case WorldSide.E: delta = new Coord(1, 0); break;
-                case WorldSide.SE: delta = new Coord(1, -1); break;
-                case WorldSide.S: delta = new Coord(0, -1); break;
-                case WorldSide.SW: delta = new Coord(-1, -1); break;
-                case WorldSide.W: delta = new Coord(-1, 0); break;
-                case WorldSide.NW: delta = new Coord(-1, 1); break;
-                default: delta = new Coord(0, 0); break;
+                case WorldSide.N: delta.ChangeCoord(0, 1); break;
+                case WorldSide.NE: delta.ChangeCoord(1, 1); break;
+                case WorldSide.E: delta.ChangeCoord(1, 0); break;
+                case WorldSide.SE: delta.ChangeCoord(1, -1); break;
+                case WorldSide.S: delta.ChangeCoord(0, -1); break;
+                case WorldSide.SW: delta.ChangeCoord(-1, -1); break;
+                case WorldSide.W: delta.ChangeCoord(-1, 0); break;
+                case WorldSide.NW: delta.ChangeCoord(-1, 1); break;
+                default: break;
             }
-            whoCast.loc.ChangeCoord(whoCast,delta);
+            whoCast.loc.ChangePosition(whoCast,delta);
             Console.WriteLine("Mob #{0} come to coord:{1}", whoCast.locId, whoCast.pos);
             enabled = false;
         }

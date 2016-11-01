@@ -10,10 +10,12 @@ namespace game
     {
         internal int x;
         internal int y;
-        public Coord(int x, int y)
+        Location loc;
+        public Coord(int x, int y, Location parent)
         {
             this.x = x;
             this.y = y;
+            this.loc = parent;
         }
         public static int Range(Coord p1, Coord p2)
         {
@@ -22,11 +24,27 @@ namespace game
         }
         public static Coord operator -(Coord p1, Coord p2)
         {
-            return new Coord(p2.x - p1.x, p2.y - p2.y);
+            Coord rez = new Coord(p1.x - p2.x, p1.y - p2.y, p1.loc);
+            rez.MinMaxAvailableCoord();
+            return rez;
+        }
+        public static Coord operator -(Coord p1, int range)
+        {
+            Coord rez = new Coord(p1.x - range, p1.y - range, p1.loc);
+            rez.MinMaxAvailableCoord();
+            return rez;
         }
         public static Coord operator +(Coord p1, Coord p2)
         {
-            return new Coord(p1.x + p2.x, p1.y + p2.y);
+            Coord rez = new Coord(p1.x + p2.x, p1.y + p2.y, p1.loc);
+            rez.MinMaxAvailableCoord();
+            return rez;
+        }
+        public static Coord operator +(Coord p1, int range)
+        {
+            Coord rez = new Coord(p1.x + range, p1.y + range, p1.loc);
+            rez.MinMaxAvailableCoord();
+            return rez;
         }
         public static bool operator ==(Coord p1, Coord p2)
         {
@@ -38,7 +56,7 @@ namespace game
         }
         public override int GetHashCode()
         {
-            return x * 1000 + y;
+            return loc.Id*1000000 +x * 1000 + y;
         }
         public override bool Equals(object obj)
         {
@@ -49,11 +67,6 @@ namespace game
                 return (this.x == objCoord.x && this.y == objCoord.y);
             }
 
-        }
-        public void newCoord(Coord vector)
-        {
-            x += vector.x;
-            y += vector.y;
         }
         public int direction(Coord p1)
         {
@@ -94,6 +107,32 @@ namespace game
         public override string ToString()
         {
             return "(" + x + ";" + y + ")";
+        }
+        public void ChangeCoord(int x, int y)
+        {
+            this.x = x;
+            this.y = y;
+        }
+        public void MinMaxAvailableCoord()
+        {
+            x = x < 0 ? 0 : x;
+            y = y < 0 ? 0 : y;
+            x = x > loc.mapSizeX ? loc.mapSizeX : x;
+            y = y > loc.mapSizeY ? loc.mapSizeY : y;
+        }
+        public List<Person> NearestPersons(int radius)
+        {
+            List<Person> allNearestPerson = new List<Person>();
+            Coord min = this - radius;
+            Coord max = this + radius;
+            for (int X = min.x; X <= max.x; X++)
+            {
+                for (int Y = min.y; Y <= max.y; Y++)
+                {
+                    allNearestPerson.AddRange((IEnumerable<Person>)loc.personsOnMap[X, Y]);
+                }
+            }
+            return allNearestPerson;
         }
     }
 }

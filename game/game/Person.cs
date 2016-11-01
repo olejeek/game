@@ -71,7 +71,7 @@ namespace game
         internal void Timed()
         {
             Thinking();
-            timeDelay--;
+            if (status != Status.Idle) timeDelay--;
             if (timeDelay <= 0 && castingSkill != null) Do();
         }
         virtual protected void Thinking()  //person thinking about next action
@@ -96,23 +96,10 @@ namespace game
         void LookAround()  //search persons around person and square range
         {
             whoAround.Clear();
-            int xmin = pos.x - vrng;
-            int xmax = pos.x + vrng;
-            int ymin = pos.y - vrng;
-            int ymax = pos.y + vrng;
-            for (int x = xmin < 0 ? 0 : xmin; x < (xmax > loc.mapSizeX ? loc.mapSizeX : xmax); x++)
+            foreach (Person p in pos.NearestPersons(vrng))
             {
-                for (int y= ymin < 0 ? 0 : ymin; y < (ymax > loc.mapSizeY ? loc.mapSizeY : ymax); y++)
-                {
-                    if (loc.personsOnMap[x,y].Count!=0)
-                    {
-                        foreach(Person p in loc.personsOnMap[x, y])
-                        {
-                            if (p!=this && p.status!= Status.Die)
-                            whoAround.Add(p, Coord.Range(pos, p.pos));
-                        }
-                    }
-                }
+                if (p != this && p.status != Status.Die)
+                    whoAround.Add(p, Coord.Range(pos, p.pos));
             }
         }
         abstract internal void Do();        //Person action
@@ -165,7 +152,8 @@ namespace game
             mspd = 2;
             vrng = 5;
             arng = 1.5F;
-            atack = (arng < 2.5F)? (stats[(int)Person.Stats.Str] +
+            atack = (arng < 2.5F)? 
+                (stats[(int)Person.Stats.Str] +
                 (stats[(int)Person.Stats.Str]/10)*(stats[(int)Person.Stats.Str] / 10) +
                 stats[(int)Person.Stats.Dex] / 5 + stats[(int)Person.Stats.Luc] / 5)
                 :
@@ -182,7 +170,7 @@ namespace game
             pdodge = stats[(int)Person.Stats.Luc] / 10 + 1;
             respTime = 600;
             status = Status.Idle;
-            pos = new Coord(r.Next(5), r.Next(5));
+            pos = new Coord(r.Next(loc.mapSizeX), r.Next(loc.mapSizeY), loc);
             Console.WriteLine("New mob add with #{0} in {1}", locId, pos);
 
         }
@@ -213,7 +201,7 @@ namespace game
             {
                 if (Target == null && whoAround.Count != 0)     //if mob doesn`t have target
                 {
-                    float minRange = vrng * vrng + 1;
+                    float minRange = 1000;
                     foreach (var anyone in whoAround)       //search target
                     {
                         if (anyone.Value < minRange)
@@ -383,7 +371,7 @@ namespace game
             mspd = 2;
             arng = 1.5F;
             vrng = 5;
-            pos = new Coord(0, 0);
+            pos = new Coord(0, 0, loc);
         }
         protected override void Thinking()
         {

@@ -15,7 +15,7 @@ namespace game
 
             SkillList = new Dictionary<string, Skiller>();
             SkillListFiller();
-            Location loc1 = new Location();
+            Location loc1 = new Location(0);
             loc1.Start();
             Console.Read();
         }
