@@ -84,14 +84,14 @@ namespace game
                 targetCast.ChangeHP(targetCast, targetCast.maxHP);
                 targetCast.mp = targetCast.maxMP;
                 targetCast.loc.ChangePosition(targetCast, 
-                    new Coord(targetCast.r.Next(targetCast.loc.mapSizeX), targetCast.r.Next(targetCast.loc.mapSizeY), targetCast.loc));
+                    new Coord(targetCast.r.Next(targetCast.loc.mapSizeX+1), targetCast.r.Next(targetCast.loc.mapSizeY+1), targetCast.loc));
                 targetCast.status = Person.Status.Idle;
             }
             else if (level == 0) targetCast.ChangeHP(targetCast, 1);
             else
                 targetCast.ChangeHP(whoCast, (int)(targetCast.maxHP * (0.1 * level + 0.1)));
                 targetCast.status = Person.Status.Idle;
-            Console.WriteLine("Mob #{0} respawned in {1}. HP:{2}/{3}",
+            Console.WriteLine("------------------Mob #{0} respawned in {1}. HP:{2}/{3}",
                     targetCast.locId, targetCast.pos, targetCast.hp, targetCast.maxHP);
             enabled = false;
         }

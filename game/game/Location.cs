@@ -10,8 +10,8 @@ namespace game
     class Location
     {
         //-----map size------
-        internal int mapSizeX = 5;
-        internal int mapSizeY = 5;
+        internal int mapSizeX = 200;
+        internal int mapSizeY = 200;
         //-----------------
 
         //internal LinkedList<Person> persons { get; private set; }
@@ -38,7 +38,7 @@ namespace game
                 }
             }
             Mob mob;
-            for (int i = 0; i < 2; i++)
+            for (int i = 0; i < 220; i++)
             {
                 string mobInfo = String.Format("{0} {0},{0},{0},{0},{0},{0} ", i + 10);
                 mobInfo += (i % 2 == 0 ? "Agressive" : "");

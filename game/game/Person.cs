@@ -170,7 +170,7 @@ namespace game
             pdodge = stats[(int)Person.Stats.Luc] / 10 + 1;
             respTime = 600;
             status = Status.Idle;
-            pos = new Coord(r.Next(loc.mapSizeX), r.Next(loc.mapSizeY), loc);
+            pos = new Coord(r.Next(loc.mapSizeX+1), r.Next(loc.mapSizeY+1), loc);
             Console.WriteLine("New mob add with #{0} in {1}", locId, pos);
 
         }

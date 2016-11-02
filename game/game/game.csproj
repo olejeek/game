@@ -45,6 +45,7 @@
   <ItemGroup>
     <Compile Include="Coord.cs" />
     <Compile Include="Location.cs" />
+    <Compile Include="Network.cs" />
     <Compile Include="Person.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
