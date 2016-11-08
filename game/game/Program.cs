@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using System.Data.OleDb;
+
 namespace game
 {
     class Program
@@ -12,12 +14,28 @@ namespace game
         public static Dictionary<string, Skiller> SkillList;
         static void Main(string[] args)
         {
-
-            SkillList = new Dictionary<string, Skiller>();
-            SkillListFiller();
-            //Location loc1 = new Location(0);
-            //loc1.Start();
-            Console.Read();
+        //    string connectionString =
+        //        @"Provider=Microsoft.Jet.OLEDB.4.0; Data Source=Ragnarok.mdb";
+        //    using (OleDbConnection connection = new OleDbConnection(connectionString))
+        //    {
+        //        connection.Open();
+        //        Console.WriteLine("ServerVersion: {0} \nDataSource: {1}",
+        //        connection.ServerVersion, connection.DataSource);
+        //        string command = "SELECT * FROM mobs";
+        //        OleDbCommand cmd = new OleDbCommand(command, connection);
+        //        OleDbDataReader reader = cmd.ExecuteReader();
+        //        while (reader.Read())
+        //        {
+        //            Console.WriteLine("Id: {0, -4} Name: {1, -20} Lvl: {2, -3}", reader[0],
+        //                reader[1], reader[2]);
+        //        }
+        //        connection.Close();
+        //    }
+                SkillList = new Dictionary<string, Skiller>();
+                SkillListFiller();
+                Location loc1 = new Location(0);
+                loc1.Start();
+                Console.Read();
         }
         static void SkillListFiller()
         {

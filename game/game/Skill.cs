@@ -146,7 +146,7 @@ namespace game
         internal Move(Person whoCast, Coord newCoord) : base(whoCast, newCoord, 1)
         {
             enabled = true;
-            timeDelay = 0;
+            timeDelay = 0;// (int)(60 / whoCast.mspd);
         }
         internal override void SkillEffect()
         {
@@ -187,6 +187,7 @@ namespace game
             this.castLevel = castLevel;
             Console.WriteLine("Mob #{0} go to {1}", caster.locId, caster.Direction);
             return (int)(60 / caster.mspd);
+            //return 0;
         }
         internal override bool EndCast()
         {
