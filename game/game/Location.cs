@@ -53,7 +53,7 @@ namespace game
         internal void Start()
         {
             locTime.AutoReset = true;
-            locTime.Interval = 1000 / 60;
+            locTime.Interval = 1000 / Program.ups ;
             locTime.Enabled = true;
             Enabled = true;
         }

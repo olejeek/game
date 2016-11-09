@@ -109,8 +109,8 @@ namespace game
             if (caster is Mob) castTime = ((Mob)caster).respTime;
             else
             {
-                castTime = 30;
-                addCastTime = 60;
+                castTime = Program.ups/2;
+                addCastTime = Program.ups;
             }
         }
         internal override int StartCast(int castLevel, object SkillTarget)
@@ -186,7 +186,7 @@ namespace game
             caster.Direction = (WorldSide)caster.pos.direction(target);
             this.castLevel = castLevel;
             Console.WriteLine("Mob #{0} go to {1}", caster.locId, caster.Direction);
-            return (int)(60 / caster.mspd);
+            return (int)(Program.ups / caster.mspd);
             //return 0;
         }
         internal override bool EndCast()
@@ -265,7 +265,7 @@ namespace game
             target = SkillTarget as Person;
             this.castLevel = castLevel;
             Console.WriteLine("Mob #{0} atack mob #{1}", caster.locId, target.locId);
-            return (int)(120 - caster.aspd);
+            return (int)(2*Program.ups - caster.aspd);
         }
         internal override bool EndCast()
         {
@@ -320,7 +320,7 @@ namespace game
             if (currentLevel > 0) EnabledToUse = true;
             minUseLevel = 1;
             maxUseLevel = currentLevel;
-            castTime = 60;
+            castTime = Program.ups;
 
         }
         internal override int StartCast(int castLevel, object SkillTarget)
