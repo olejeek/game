@@ -21,7 +21,8 @@ namespace game
         private int port;           //server port
         private Thread threadListener;
         private Thread Reciever;
-        private ConcurrentDictionary<int,OnlineUser> usersOnline;
+        //private ConcurrentDictionary<int,OnlineUser> usersOnline;
+        private ConcurrentQueue<OnlineUser> usersOnline;
         private Thread threadWork;
         static private Socket Listener;         //socket, which receive connections
         public static Network CreateServer()
@@ -83,7 +84,7 @@ namespace game
             this.ipAddress = IPAddress.Parse(ip);
             this.port = port;
             serverWork = false;
-            usersOnline = new ConcurrentDictionary<int, OnlineUser>();
+            usersOnline = new ConcurrentQueue<OnlineUser>();
             Listener = new Socket(AddressFamily.InterNetwork, 
                 SocketType.Stream, 
                 ProtocolType.Tcp);      //create socket to listening port
@@ -142,19 +143,12 @@ namespace game
         {
             while(serverWork)
             {
-                int maxCount = usersOnline.Count;
-                for (int i=0; i<maxCount; i++)
+                OnlineUser temp;
+                if (usersOnline.TryDequeue(out temp))
                 {
-                    if (!usersOnline.ElementAt(i).Value.online)
-                    {
-                        OnlineUser del;
-                        if (usersOnline.TryRemove(usersOnline.ElementAt(i).Key, out del))
-                        {
-                            del = null;
-                            maxCount--;
-                            continue;
-                        }
-                    }
+                    if (temp.status == OnlineUser.Status.Disconnect) continue;
+                    temp.Handler();
+                    usersOnline.Enqueue(temp);
                 }
             }
         }
@@ -164,20 +158,26 @@ namespace game
             try
             {
                 reciever = Listener.Accept();
+                usersOnline.Enqueue(new OnlineUser(reciever));
+            }
+            /*
+            try
+            {
+                reciever = Listener.Accept();
                 byte[] recievedBytes = new byte[1024];
                 int numBytes = reciever.Receive(recievedBytes);
+                string[] message = Encoding.ASCII.GetString(recievedBytes)
+                    .Split(new char[] { '\n', '\0' }, 3, StringSplitOptions.RemoveEmptyEntries);
                 string answer;
-                if (recievedBytes[0]==255)    //login
+                if (message[0]=="1")    //login
                 {
-                    string mes = Encoding.ASCII.GetString(recievedBytes, 1, numBytes - 1);
-                    string[] logins = mes.Split(new char[] { '\n', '\0' }, 2, StringSplitOptions.RemoveEmptyEntries);
                     string connectionString =
                         @"Provider=Microsoft.Jet.OLEDB.4.0; Data Source=Ragnarok.mdb";
                     using (OleDbConnection connection = new OleDbConnection(connectionString))
                     {
                         connection.Open();
                         string command = "SELECT * FROM users WHERE login='"
-                            +logins[0]+"' AND pswd='"+logins[1]+"'";
+                            +message[1]+"' AND pswd='"+message[2]+"'";
                         OleDbCommand cmd = new OleDbCommand(command, connection);
                         OleDbDataReader reader = cmd.ExecuteReader();
                         if (reader.Read())
@@ -187,10 +187,8 @@ namespace game
                                 Console.ForegroundColor = ConsoleColor.Red;
                                 Console.WriteLine("{0} banned!!!", reader[1]);
                                 Console.ResetColor();
-                                answer = "Your account was banned!";
-                                byte[] sendBytes = new byte[answer.Length + 1];
-                                Encoding.ASCII.GetBytes(answer, 0, answer.Length, sendBytes, 1);
-                                sendBytes[0] = 255;
+                                answer = "1\tYour account was banned!";
+                                byte[] sendBytes = Encoding.ASCII.GetBytes(answer);
                                 reciever.Send(sendBytes);
                                 reciever.Close();
                             }
@@ -199,10 +197,8 @@ namespace game
                                 Console.ForegroundColor = ConsoleColor.Red;
                                 Console.WriteLine("{0} was logging yet!", reader[1]);
                                 Console.ResetColor();
-                                answer = "Your account was logging yet!";
-                                byte[] sendBytes = new byte[answer.Length + 1];
-                                Encoding.ASCII.GetBytes(answer, 0, answer.Length, sendBytes, 1);
-                                sendBytes[0] = 255;
+                                answer = "1\tYour account was logging yet!";
+                                byte[] sendBytes = Encoding.ASCII.GetBytes(answer);
                                 reciever.Send(sendBytes);
                                 reciever.Close();
                             }
@@ -211,35 +207,31 @@ namespace game
                                 Console.ForegroundColor = ConsoleColor.Green;
                                 Console.WriteLine("{0} (ID: {1}) login", reader[1], reader[0]);
                                 Console.ResetColor();
-                                while(!usersOnline.TryAdd((int)reader[0], new OnlineUser(reciever)));
+                                usersOnline.TryAdd((int)reader[0], new OnlineUser(reciever, (int)reader[0]));
                             }
                         }
                         else
                         {
                             Console.ForegroundColor = ConsoleColor.Red;
-                            Console.WriteLine("Login Error {0}", logins[0]);
+                            Console.WriteLine("Login Error {0}", message[1]);
                             Console.ResetColor();
-                            answer = "Login Error!";
-                            byte[] sendBytes = new byte[answer.Length + 1];
-                            Encoding.ASCII.GetBytes(answer, 0, answer.Length, sendBytes, 1);
-                            sendBytes[0] = 255;
+                            answer = "1\tLogin Error!";
+                            byte[] sendBytes = Encoding.ASCII.GetBytes(answer);
                             reciever.Send(sendBytes);
                             reciever.Close();
                         }
                         connection.Close();
                     }
                 }
-                else if (recievedBytes[0] == 254) //create new account
+                else if (message[0] == "0") //create new account
                 {
-                    string mes = Encoding.ASCII.GetString(recievedBytes, 1, numBytes - 1);
-                    string[] logins = mes.Split(new char[] { '\n' }, 2, StringSplitOptions.RemoveEmptyEntries);
                     string connectionString =
                         @"Provider=Microsoft.Jet.OLEDB.4.0; Data Source=Ragnarok.mdb";
                     using (OleDbConnection connection = new OleDbConnection(connectionString))
                     {
                         connection.Open();
                         string command = "SELECT * FROM users WHERE login='"
-                            + logins[0] + "'";
+                            + message[1] + "'";
                         OleDbCommand cmd = new OleDbCommand(command, connection);
                         OleDbDataReader reader = cmd.ExecuteReader();
                         if (reader.Read())
@@ -247,16 +239,14 @@ namespace game
                             Console.ForegroundColor = ConsoleColor.Red;
                             Console.WriteLine("User {0} (ID: {1}) was created early.", reader[1], reader[0]);
                             Console.ResetColor();
-                            answer = "Accaunt "+reader[1].ToString()+" was created early.";
-                            byte[] sendBytes = new byte[answer.Length + 1];
-                            Encoding.ASCII.GetBytes(answer, 0, answer.Length, sendBytes, 1);
-                            sendBytes[0] = 255;
+                            answer = "1\tAccaunt "+reader[1].ToString()+" was created early.";
+                            byte[] sendBytes = Encoding.ASCII.GetBytes(answer);
                             reciever.Send(sendBytes);
                             reciever.Close();
                         }
                         else
                         {
-                            command = "INSERT INTO users (login,pswd,ban) VALUES ('"+logins[0]+"', '"+logins[1]+"', false);";
+                            command = "INSERT INTO users (login,pswd,ban) VALUES ('"+message[1]+"', '"+message[2]+"', false);";
                             cmd = new OleDbCommand(command, connection);
                             int i = cmd.ExecuteNonQuery();
                             if (i==1)
@@ -264,12 +254,16 @@ namespace game
                                 Console.ForegroundColor = ConsoleColor.Green;
                                 Console.WriteLine("New account was added");
                                 Console.ResetColor();
+                                usersOnline.TryAdd((int)reader[0], new OnlineUser(reciever, (int)reader[0]));
                             }
                             else
                             {
                                 Console.ForegroundColor = ConsoleColor.Red;
                                 Console.WriteLine("Error add new account");
                                 Console.ResetColor();
+                                answer = "1\tError with creating accaunt.";
+                                byte[] sendBytes = Encoding.ASCII.GetBytes(answer);
+                                reciever.Send(sendBytes);
                                 reciever.Close();
                             }
                         }
@@ -282,10 +276,12 @@ namespace game
                 }
                 
             }
+            */
             catch (SocketException)
             {
                 if (reciever != null) reciever.Close();
             }
+            
         }
     }
 }

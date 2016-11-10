@@ -25,11 +25,8 @@ namespace GameClientV0
             a.Connect(IPAddress.Parse("172.20.53.7"), 1990);
             string login = loginBox.Text;
             string pswd = pswdBox.Text;
-            string sendMes = login + "\n" + pswd;
-            byte[] sendBytes = new byte[sendMes.Length+1];
-            sendBytes[0] = 255;
-            int numSendMes = Encoding.ASCII.GetBytes(sendMes, 0, sendMes.Length, sendBytes, 1);
-            a.Send(sendBytes);
+            string sendMes = "0\n" + login + "\n" + pswd;
+            a.Send(Encoding.ASCII.GetBytes(sendMes));
             a.Close();
         }
 
@@ -39,11 +36,8 @@ namespace GameClientV0
             a.Connect(IPAddress.Parse("172.20.53.7"), 1990);
             string login = loginBox.Text;
             string pswd = pswdBox.Text;
-            string sendMes = login + "\n" + pswd;
-            byte[] sendBytes = new byte[sendMes.Length + 1];
-            sendBytes[0] = 254;
-            int numSendMes = Encoding.ASCII.GetBytes(sendMes, 0, sendMes.Length, sendBytes, 1);
-            a.Send(sendBytes);
+            string sendMes = "0\n" + login + "\n" + pswd;
+            a.Send(Encoding.ASCII.GetBytes(sendMes));
             a.Close();
         }
     }
