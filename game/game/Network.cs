@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Data.OleDb;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -108,7 +107,7 @@ namespace game
             else            //а если включен, то
             {
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("Chat Server was started early.");    //пишем красным, что он включен
+                Console.WriteLine("Server was started early.");    //пишем красным, что он включен
                 Console.ResetColor();
             }
         }
@@ -118,7 +117,7 @@ namespace game
         {
             serverWork = true;
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("Server succesfully started!");
+            Console.WriteLine("Listener succesfully started!");
             Console.ResetColor();
             while(serverWork)
             {
@@ -141,7 +140,10 @@ namespace game
         }
         private void Work()
         {
-            while(serverWork)
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("Server succesfully started!");
+            Console.ResetColor();
+            while (serverWork)
             {
                 OnlineUser temp;
                 if (usersOnline.TryDequeue(out temp))

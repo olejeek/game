@@ -11,6 +11,7 @@ namespace GameClientV0
         /// <summary>
         /// Главная точка входа для приложения.
         /// </summary>
+        public const int ups = 60;
         [STAThread]
         static void Main()
         {

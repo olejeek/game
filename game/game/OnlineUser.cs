@@ -12,7 +12,7 @@ namespace game
     {
         string db =
                         @"Provider=Microsoft.Jet.OLEDB.4.0; Data Source=Ragnarok.mdb";
-        public enum Status { Disconnect, Connected, Login, HeroChoose, Play}
+        public enum Status { Disconnect, Connected, Login, Play}
         Socket connection;
         public Status status { get; private set; }
         int loginId;
@@ -21,7 +21,7 @@ namespace game
         int mesLength;
         byte[] recievedBytes;
         string[] inpMessage;
-        enum CommandCode { EndOfCommand, Disconnect, Login, CreateHero, DeleteHero, ChooseHero}
+        string[] inpBlocks;
 
         public OnlineUser(Socket connection)
         {
@@ -34,24 +34,34 @@ namespace game
         public void Handler()
         {
             mesLength = connection.Available;
-            if (mesLength == 0 && CheckTimeOut()) return;
+            if (mesLength == 0)
+            {
+                CheckTimeOut();
+                return;
+            }
             timeOut = 0;
             recievedBytes = new byte[mesLength];
             connection.Receive(recievedBytes);
-            inpMessage = Encoding.ASCII.GetString(recievedBytes)
-                .Split(new char[] { '\n', '\0' }, StringSplitOptions.RemoveEmptyEntries);
-            Commands[Convert.ToInt32(inpMessage[0])]();
+            inpBlocks = Encoding.ASCII.GetString(recievedBytes)
+                .Split(new char[] { '\0' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (string block in inpBlocks)
+            {
+                inpMessage = Encoding.ASCII.GetString(recievedBytes)
+                .Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                Commands[Convert.ToInt32(inpMessage[0])]();
+            }
+            //inpMessage = Encoding.ASCII.GetString(recievedBytes)
+            //    .Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            //Commands[Convert.ToInt32(inpMessage[0])]();
         }
 
-        private bool CheckTimeOut()
+        private void CheckTimeOut()
         {
             timeOut++;
             if (timeOut >= 5 * 60 * Program.ups)
             {
                 SendAndDisconnect("1\nTimeout!");
-                return true;
             }
-            else return false;
         }
 
         private void Registration()
@@ -61,11 +71,12 @@ namespace game
                 SendAndDisconnect("-1\nConnection Error");
                 return;
             }
+            string[] logins = inpMessage[1].Split('\t');
             using (OleDbConnection dbConnect = new OleDbConnection(db))
             {
                 dbConnect.Open();
                 string command = "SELECT * FROM users WHERE login='"
-                    + inpMessage[1] + "'";
+                    + logins[0] + "'";
                 OleDbCommand cmd = new OleDbCommand(command, dbConnect);
                 OleDbDataReader reader = cmd.ExecuteReader();
                 if (reader.Read())
@@ -77,7 +88,7 @@ namespace game
                 }
                 else
                 {
-                    command = "INSERT INTO users (login,pswd,ban) VALUES ('" + inpMessage[1] + "', '" + inpMessage[2] + "', false);";
+                    command = "INSERT INTO users (login,pswd,ban) VALUES ('" + logins[0] + "', '" + logins[1] + "', false);";
                     cmd = new OleDbCommand(command, dbConnect);
                     int i = cmd.ExecuteNonQuery();
                     if (i == 1)
@@ -85,7 +96,7 @@ namespace game
                         Console.ForegroundColor = ConsoleColor.Green;
                         Console.WriteLine("New account was added");
                         Console.ResetColor();
-                        SendAndDisconnect("0\nAccaunt " + inpMessage[1] + " successfully created.");
+                        SendAndDisconnect("0\nAccaunt " + logins[0] + " successfully created.");
                     }
                     else
                     {
@@ -100,6 +111,7 @@ namespace game
         }
         private void Login()
         {
+            string[] logins = inpMessage[1].Split('\t');
             if (status != Status.Connected)
             {
                 SendAndDisconnect("-1\nConnection Error");
@@ -109,7 +121,7 @@ namespace game
             {
                 dbConnect.Open();
                 string command = "SELECT * FROM users WHERE login='"
-                    + inpMessage[1] + "' AND pswd='" + inpMessage[2] + "'";
+                    + logins[0] + "' AND pswd='" + logins[1] + "'";
                 OleDbCommand cmd = new OleDbCommand(command, dbConnect);
                 OleDbDataReader reader = cmd.ExecuteReader();
                 if (reader.Read())
@@ -126,15 +138,17 @@ namespace game
                         Console.ForegroundColor = ConsoleColor.Green;
                         Console.WriteLine("{0} (ID: {1}) login", reader[1], reader[0]);
                         Console.ResetColor();
-                        Send("0\nAccess to" + reader[1] + "is allowed");
                         loginId = (int)reader[0];
                         status = Status.Login;
+                        string output = "0\nAccess to" + reader[1] + "is allowed";
+                        output += HeroesList(dbConnect);
+                        Send(output);
                     }
                 }
                 else
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine("Login Error {0}", inpMessage[1]);
+                    Console.WriteLine("Login Error {0}", logins[0]);
                     Console.ResetColor();
                     SendAndDisconnect("-1\nLogin Error!");
                 }
@@ -168,13 +182,34 @@ namespace game
 
         private void Send(string str)
         {
-            connection.Send(Encoding.ASCII.GetBytes(str));
+            connection.Send(Encoding.ASCII.GetBytes(str+"\0"));
         }
         private void SendAndDisconnect(string str)
         {
-            connection.Send(Encoding.ASCII.GetBytes(str));
+            connection.Send(Encoding.ASCII.GetBytes(str+"\0"));
             status = Status.Disconnect;
             connection.Close();
+        }
+
+        private string HeroesList(OleDbConnection dbConnect)
+        {
+            StringBuilder heroInfo = new StringBuilder();
+            if (dbConnect.State== System.Data.ConnectionState.Open)
+            {
+                string command = "SELECT * FROM players WHERE loginid='" + loginId + "'";
+                OleDbCommand cmd = new OleDbCommand(command, dbConnect);
+                OleDbDataReader reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    for (int i = 0; i < reader.FieldCount; i++)
+                    {
+                        heroInfo = heroInfo.Append(reader[i].ToString());
+                        heroInfo = heroInfo.Append('\t');
+                    }
+                }
+                heroInfo.Append('\n');
+            }
+            return heroInfo.ToString();
         }
 
         private void CommandsFiller()
@@ -186,58 +221,6 @@ namespace game
             Commands.Add(DeleteHero);
             Commands.Add(ChooseHero);
         }
-        private void OutputChooseHero()
-        {
-            string connectionString =
-                @"Provider=Microsoft.Jet.OLEDB.4.0; Data Source=Ragnarok.mdb";
-            using (OleDbConnection connection = new OleDbConnection(connectionString))
-            {
-                connection.Open();
-                string command = "SELECT (id, name, class, baseLvl, jobLvl, str, agi, vit, int, dex, luk, curHP, curSP, locId) FROM players WHERE loginId=" + loginId;
-                OleDbCommand cmd = new OleDbCommand(command, connection);
-                OleDbDataReader reader = cmd.ExecuteReader();
-                List<PlayerInfo> heroList = new List<PlayerInfo>();
-                while (reader.Read())
-                {
-                    heroList.Add(new PlayerInfo(reader));
-                }
-                connection.Close();
-            }
-        }
     }
 
-    struct PlayerInfo
-    {
-        int id;
-        string name;
-        int Class;
-        int baseLvl;
-        int jobLvl;
-        int Str;
-        int Agi;
-        int Vit;
-        int Int;
-        int Dex;
-        int Luk;
-        int curHP;
-        int curSP;
-        int locId;
-        public PlayerInfo(OleDbDataReader r)
-        {
-            id = (int)r[0];
-            name = r[1].ToString();
-            Class = (int)r[2];
-            baseLvl = (int)r[3];
-            jobLvl = (int)r[4];
-            Str = (int)r[5];
-            Agi = (int)r[6];
-            Vit = (int)r[7];
-            Int = (int)r[8];
-            Dex = (int)r[9];
-            Luk = (int)r[10];
-            curHP = (int)r[11];
-            curSP = (int)r[12];
-            locId = (int)r[13];
-        }
-    }
 }
