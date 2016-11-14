@@ -12,7 +12,7 @@ using System.Net;
 
 namespace GameClientV0
 {
-    public partial class Form1 : Form
+    public partial class Form1 : Form, IStatusChanger
     {
         public Form1()
         {
@@ -31,7 +31,12 @@ namespace GameClientV0
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            OnlineUser.Disconnect("-1\nDisconnect.");
+            if (OnlineUser.status == OnlineUser.Status.Connected)
+            OnlineUser.SendAndDisconnect("-1\nDisconnect.");
+        }
+        public void StatusChanger(string status)
+        {
+            status_label.Text = status;
         }
     }
 }

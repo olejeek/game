@@ -17,17 +17,19 @@ namespace game
         public Status status { get; private set; }
         int loginId;
         List<Action> Commands;
-        int timeOut;
+        //int timeOut;
         int mesLength;
         byte[] recievedBytes;
         string[] inpMessage;
         string[] inpBlocks;
+        DateTime lastCommand;
 
         public OnlineUser(Socket connection)
         {
             this.connection = connection;
             this.loginId = -1;
-            timeOut = 0;
+            lastCommand = DateTime.Now;
+            //timeOut = 0;
             status = Status.Connected;
             CommandsFiller();
         }
@@ -39,29 +41,36 @@ namespace game
                 CheckTimeOut();
                 return;
             }
-            timeOut = 0;
+            lastCommand = DateTime.Now;
+            //timeOut = 0;
             recievedBytes = new byte[mesLength];
             connection.Receive(recievedBytes);
             inpBlocks = Encoding.ASCII.GetString(recievedBytes)
                 .Split(new char[] { '\0' }, StringSplitOptions.RemoveEmptyEntries);
             foreach (string block in inpBlocks)
             {
-                inpMessage = Encoding.ASCII.GetString(recievedBytes)
+                inpMessage = block
                 .Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                Commands[Convert.ToInt32(inpMessage[0])]();
+                int comNum = Convert.ToInt32(inpMessage[0]);
+                if (comNum!=-1) Commands[Convert.ToInt32(comNum)]();
+                else
+                {
+                    connection.Close();
+                    status = Status.Disconnect;
+                    Console.WriteLine("Id: {0} disconnected.", loginId);
+                }
             }
-            //inpMessage = Encoding.ASCII.GetString(recievedBytes)
-            //    .Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
-            //Commands[Convert.ToInt32(inpMessage[0])]();
         }
 
         private void CheckTimeOut()
         {
-            timeOut++;
-            if (timeOut >= 5 * 60 * Program.ups)
-            {
-                SendAndDisconnect("1\nTimeout!");
-            }
+            TimeSpan delta = lastCommand - DateTime.Now;
+            if (delta.Minutes > 5) SendAndDisconnect("-1\nTimeout!");
+            //timeOut++;
+            //if (timeOut >= 5 * 60 * Program.ups)
+            //{
+            //    SendAndDisconnect("-1\nTimeout!");
+            //}
         }
 
         private void Registration()
@@ -140,7 +149,7 @@ namespace game
                         Console.ResetColor();
                         loginId = (int)reader[0];
                         status = Status.Login;
-                        string output = "0\nAccess to" + reader[1] + "is allowed";
+                        string output = "1\nAccess to " + reader[1] + " is allowed";
                         output += HeroesList(dbConnect);
                         Send(output);
                     }
@@ -187,6 +196,7 @@ namespace game
         private void SendAndDisconnect(string str)
         {
             connection.Send(Encoding.ASCII.GetBytes(str+"\0"));
+            Console.WriteLine("{0}: {1}", loginId, str);
             status = Status.Disconnect;
             connection.Close();
         }
