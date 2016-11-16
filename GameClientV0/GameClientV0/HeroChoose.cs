@@ -26,8 +26,7 @@ namespace GameClientV0
         private void createHero_btn_Click(object sender, EventArgs e)
         {
             HeroCreation NHero = new HeroCreation();
-            NHero.Show();
-            this.Close();
+            NHero.ShowDialog();
         }
     }
 }

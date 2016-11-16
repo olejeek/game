@@ -59,7 +59,7 @@ namespace GameClientV0
                 .Split(new char[] { '\0' }, StringSplitOptions.RemoveEmptyEntries);
             foreach (string block in inpBlocks)
             {
-                inpMessages = inpBlocks[0]
+                inpMessages = block
                     .Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
                 int comNum = Convert.ToInt32(inpMessages[0]);
                 if (comNum != -1) Commands[comNum]();
@@ -113,6 +113,9 @@ namespace GameClientV0
         {
             status = Status.ChooseHero;
             ChangeStatus(status.ToString());
+        }
+        private static void ChooseHero()
+        {
             Application.OpenForms[0].Hide();
             HeroChoose hc = new HeroChoose(inpMessages);
             hc.Show();
@@ -126,6 +129,7 @@ namespace GameClientV0
         {
             Commands.Add(Registration);
             Commands.Add(Login);
+            Commands.Add(ChooseHero);
         }
     }
 }

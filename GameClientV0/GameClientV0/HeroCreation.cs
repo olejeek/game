@@ -12,43 +12,65 @@ namespace GameClientV0
 {
     public partial class HeroCreation : Form
     {
-        int Str, Agi, Vit, Int, Dex, Luc, freeSP;
+        private void strBtn_Click(object sender, EventArgs e)
+        {
+            if (STRvsINT.Value != 9)
+            {
+                STRvsINT.Value++;
+                toolTip1.SetToolTip(STRvsINT, "STR: " + STRvsINT.Value + "\tINT: " + (10 - STRvsINT.Value));
+            }
+        }
+        private void intBtn_Click(object sender, EventArgs e)
+        {
+            if (STRvsINT.Value != 1)
+            {
+                STRvsINT.Value--;
+                toolTip1.SetToolTip(STRvsINT, "STR: " + STRvsINT.Value + "\tINT: " + (10 - STRvsINT.Value));
+            }
+        }
+
+        private void agiBtn_Click(object sender, EventArgs e)
+        {
+            if (AGIvsLUK.Value != 9)
+            {
+                AGIvsLUK.Value++;
+                toolTip1.SetToolTip(AGIvsLUK, "AGI: " + AGIvsLUK.Value + "\tLUK: " + (10 - AGIvsLUK.Value));
+            }
+        }
+
+        private void lukBtn_Click(object sender, EventArgs e)
+        {
+            if (AGIvsLUK.Value != 1)
+            {
+                AGIvsLUK.Value--;
+                toolTip1.SetToolTip(AGIvsLUK, "AGI: " + AGIvsLUK.Value + "\tLUK: " + (10 - AGIvsLUK.Value));
+            }
+        }
+
+        private void vitBtn_Click(object sender, EventArgs e)
+        {
+            if (VITvsDEX.Value != 9)
+            {
+                VITvsDEX.Value++;
+                toolTip1.SetToolTip(VITvsDEX, "VIT: " + VITvsDEX.Value + "\tDEX: " + (10 - VITvsDEX.Value));
+            }
+        }
+
+        private void dexBtn_Click(object sender, EventArgs e)
+        {
+            if (VITvsDEX.Value != 1)
+            {
+                VITvsDEX.Value--;
+                toolTip1.SetToolTip(VITvsDEX, "VIT: " + VITvsDEX.Value + "\tDEX: " + (10 - VITvsDEX.Value));
+            }
+        }
 
         public HeroCreation()
         {
             InitializeComponent();
-            Str = 1;
-            Agi = 1;
-            Vit = 1;
-            Int = 1;
-            Dex = 1;
-            Luc = 1;
-            freeSP = 48;
-        }
-
-        private int inc(int stat)
-        {
-            if (freeSP%2>0)
-            {
-                stat++;
-                freeSP -= 2;
-                freeSPBox.Text = freeSP.ToString();
-            }
-            return stat;
-        }
-
-        private int dec(int stat)
-        {
-            stat--;
-            freeSP += 2;
-            freeSPBox.Text = freeSP.ToString();
-            return stat;
-        }
-
-        private void strNum_ValueChanged(object sender, EventArgs e)
-        {
-            if ((int)strNum.Value > Str) Str = inc(Str);
-            else Str = dec(Str);
+            toolTip1.SetToolTip(STRvsINT, "STR: " + STRvsINT.Value + "\tINT: " + (10 - STRvsINT.Value));
+            toolTip1.SetToolTip(AGIvsLUK, "AGI: " + AGIvsLUK.Value + "\tLUK: " + (10 - AGIvsLUK.Value));
+            toolTip1.SetToolTip(VITvsDEX, "VIT: " + VITvsDEX.Value + "\tDEX: " + (10 - VITvsDEX.Value));
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -58,35 +80,25 @@ namespace GameClientV0
 
         private void HeroCreation_FormClosing(object sender, FormClosingEventArgs e)
         {
-            HeroChoose hc = new HeroChoose(new string[1]);
-            hc.Show();
+
         }
 
-        private void agiNum_ValueChanged(object sender, EventArgs e)
+        private void createBtn_Click(object sender, EventArgs e)
         {
-            if ((int)agiNum.Value > Agi) Agi = inc(Agi);
-            else Agi = dec(Agi);
-        }
-        //it is not work
-        private void vitNum_ValueChanged(object sender, EventArgs e)
-        {
-            if ((int)vitNum.Value > Vit) Vit = inc(Vit);
-            else Vit = dec(Vit);
-        }
-        private void intNum_ValueChanged(object sender, EventArgs e)
-        {
-            if ((int)intNum.Value > Int) Int = inc(Int);
-            else Int = dec(Int);
-        }
-        private void dexNum_ValueChanged(object sender, EventArgs e)
-        {
-            if ((int)dexNum.Value > Dex) Dex = inc(Dex);
-            else Dex = dec(Dex);
-        }
-        private void lukNum_ValueChanged(object sender, EventArgs e)
-        {
-            if ((int)lukNum.Value > Luc) Luc = inc(Luc);
-            else Luc = dec(Luc);
+            if (nameBox.Text.Length != 0)
+            {
+                StringBuilder answer = new StringBuilder();
+                answer.Append("2\n");
+                answer.Append(nameBox.Text + "\t");
+                answer.Append(STRvsINT.Value + "\t");
+                answer.Append(AGIvsLUK.Value + "\t");
+                answer.Append(VITvsDEX.Value + "\t");
+                answer.Append((10-STRvsINT.Value) + "\t");
+                answer.Append((10 - VITvsDEX.Value) + "\t");
+                answer.Append((10 - AGIvsLUK.Value));
+                OnlineUser.Send(answer.ToString());
+            }
+            else MessageBox.Show("You don`t write hero name!");
         }
 
         private void nameBox_KeyPress(object sender, KeyPressEventArgs e)

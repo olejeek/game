@@ -150,8 +150,9 @@ namespace game
                         loginId = (int)reader[0];
                         status = Status.Login;
                         string output = "1\nAccess to " + reader[1] + " is allowed";
-                        output += HeroesList(dbConnect);
+                        //output += HeroesList(dbConnect);
                         Send(output);
+                        Send(HeroesList(dbConnect));
                     }
                 }
                 else
@@ -171,6 +172,45 @@ namespace game
                 SendAndDisconnect("-1\nConnection Error");
                 return;
             }
+            string[] param = inpMessage[1].Split('\t');
+            using (OleDbConnection dbConnect = new OleDbConnection(db))
+            {
+                dbConnect.Open();
+                string command = "SELECT name FROM heroes WHERE name='"
+                    + param[0] + "';";
+                OleDbCommand cmd = new OleDbCommand(command, dbConnect);
+                OleDbDataReader reader = cmd.ExecuteReader();
+                if (reader.Read())
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Hero with name {0} was created early.", reader[0]);
+                    Console.ResetColor();
+                    Send("2\n-1\tHero with name "+ reader[0] + " was created early.");
+                }
+                else
+                {
+                    command = string.Format("INSERT INTO players([loginId], [name], [str], [agi], "+
+                        "[vit], [int], [dex], [luk]) VALUES ({0}, \'{1}\', {2}, {3}, {4}, {5}, {6}, {7});",
+                       loginId, param[0], param[1], param[2], param[3], param[4], param[5], param[6]);
+                    cmd = new OleDbCommand(command, dbConnect);
+                    if (cmd.ExecuteNonQuery() == 1)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.WriteLine("ID: {0} create new hero - {0}", loginId, param[0]);
+                        Console.ResetColor();
+                        Send("2\n0\tHero " + param[0] + " successfully created.");
+                    }
+                    else
+                    {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine("Error add new hero");
+                        Console.ResetColor();
+                        Send("2\n-1\nError with creating hero.");
+                    }
+                }
+                dbConnect.Close();
+            }
+
         }
         private void DeleteHero()
         {
@@ -204,9 +244,10 @@ namespace game
         private string HeroesList(OleDbConnection dbConnect)
         {
             StringBuilder heroInfo = new StringBuilder();
+            heroInfo.Append("2\n");
             if (dbConnect.State== System.Data.ConnectionState.Open)
             {
-                string command = "SELECT * FROM players WHERE loginid='" + loginId + "'";
+                string command = "SELECT * FROM players WHERE loginid=" + loginId + ";";
                 OleDbCommand cmd = new OleDbCommand(command, dbConnect);
                 OleDbDataReader reader = cmd.ExecuteReader();
                 while (reader.Read())
@@ -219,6 +260,7 @@ namespace game
                 }
                 heroInfo.Append('\n');
             }
+            heroInfo.Append('\0');
             return heroInfo.ToString();
         }
 
