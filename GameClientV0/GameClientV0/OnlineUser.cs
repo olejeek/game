@@ -16,7 +16,8 @@ namespace GameClientV0
     }
     static class OnlineUser
     {
-
+        static HeroChoose heroChoose;
+        static HeroCreation heroCreation;
         public enum Status { Disconnect, Connected, ChooseHero, Play }
         static public Status status = Status.Disconnect;
         static public event Action<string> ChangeStatus;
@@ -29,12 +30,17 @@ namespace GameClientV0
         static byte[] recievedBytes;
         static List<Action> Commands = new List<Action>();
 
+        static OnlineUser()
+        {
+            timer.Tick += Tick;
+            timer.Interval = 1000 / Program.ups;
+        }
+
         public static void Connect()
         {
             if (Commands.Count == 0) CommandsFiller();
             ChangeStatus += ((IStatusChanger)(Application.OpenForms[0])).StatusChanger;
-            timer.Tick += Tick;
-            timer.Interval = 1000 / Program.ups;
+            //timer.Tick += Tick;
             timer.Start();
             timeOut = 0;
             if (!connection.Connected)
@@ -116,15 +122,33 @@ namespace GameClientV0
         }
         private static void ChooseHero()
         {
-            Application.OpenForms[0].Hide();
-            HeroChoose hc = new HeroChoose(inpMessages);
-            hc.Show();
+            CloseAllFormsWhileLogin();
+            if (Application.OpenForms[0].Visible) Application.OpenForms[0].Hide();
+            heroChoose = new HeroChoose(inpMessages);
+            heroChoose.Show();
         }
         private static void Error()
         {
+            CloseAllFormsWhileLogin();
             Disconnect(inpMessages[1]);
         }
 
+        public static void OpenFormToCreateHero()
+        {
+            heroCreation = new HeroCreation();
+            heroCreation.Show();
+        }
+        private static void CloseAllFormsWhileLogin()
+        {
+            int formsCount = Application.OpenForms.Count;
+            if (formsCount > 1)
+            {
+                for (int i = formsCount - 1; i > 0; i--)
+                {
+                    if (!(Application.OpenForms[i] is Form1)) Application.OpenForms[i].Close();
+                }
+            }
+        }
         private static void CommandsFiller()
         {
             Commands.Add(Registration);

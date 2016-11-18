@@ -12,9 +12,17 @@ namespace GameClientV0
 {
     public partial class HeroChoose : Form
     {
+        List<HeroInfo> hero;
         public HeroChoose(string[] heroes)
         {
             InitializeComponent();
+            hero = new List<HeroInfo>();
+            for (int i = 1; i < heroes.Length; i++)
+            {
+                hero.Add(new HeroInfo(heroes[i]));
+                ListViewItem heroListItem = new ListViewItem( hero[i - 1].ToListView());
+                heroListView.Items.Add(heroListItem);
+            }
         }
 
         private void HeroChoose_FormClosed(object sender, FormClosedEventArgs e)
@@ -25,8 +33,27 @@ namespace GameClientV0
 
         private void createHero_btn_Click(object sender, EventArgs e)
         {
-            HeroCreation NHero = new HeroCreation();
-            NHero.ShowDialog();
+            OnlineUser.OpenFormToCreateHero();
+        }
+
+        struct HeroInfo
+        {
+            int HeroId;
+            string[] parametres;
+            
+            public HeroInfo(string info)
+            {
+                string temp = info.Substring(0, info.IndexOf('\t'));
+                HeroId = Convert.ToInt32(temp);
+                parametres = (info.Substring(info.IndexOf('\t')+1)).Split(new char[] { '\t' }, 
+                    StringSplitOptions.RemoveEmptyEntries);
+                parametres[1] = "Novice";
+                parametres[10] = "Start Loc";
+            }
+            public string[] ToListView ()
+            {
+                return parametres;
+            }
         }
     }
 }

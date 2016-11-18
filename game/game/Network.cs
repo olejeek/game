@@ -9,7 +9,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace game
+using game.NetHandler;
+
+namespace game.Net
 {
     class Network
     {
