@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Net;
 using System.Windows.Forms;
+using game.Net.Protocol;
 
 namespace GameClientV0
 {
@@ -28,109 +29,262 @@ namespace GameClientV0
         static string[] inpBlocks;
         static string[] inpMessages;
         static byte[] recievedBytes;
-        static List<Action> Commands = new List<Action>();
+        static List<Action<Block>> Commands = new List<Action<Block>>();
+        static List<Block> blocksToSend = new List<Block>();
 
         static OnlineUser()
         {
+            if (Commands.Count == 0) CommandsFiller();
+            ChangeStatus += ((IStatusChanger)(Application.OpenForms[0])).StatusChanger;
             timer.Tick += Tick;
             timer.Interval = 1000 / Program.ups;
         }
 
+        public static void BlockToSend(Block block)
+        {
+            blocksToSend.Add(block);
+        }
+
         public static void Connect()
         {
-            if (Commands.Count == 0) CommandsFiller();
-            ChangeStatus += ((IStatusChanger)(Application.OpenForms[0])).StatusChanger;
-            //timer.Tick += Tick;
-            timer.Start();
-            timeOut = 0;
-            if (!connection.Connected)
+            try
             {
-                connection = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                connection.Connect(IPAddress.Parse("172.20.53.7"), 1990);
-                status = Status.Connected;
+                if (!connection.Connected)
+                {
+                    connection = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                    connection.Connect(IPAddress.Parse("172.20.53.7"), 1990);
+                    status = Status.Connected;
+                    ChangeStatus(status.ToString());
+                }
+                timer.Start();
+                timeOut = 0;
+            }
+            catch
+            {
+                MessageBox.Show("Server Disabled!", "Error", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
+        private static void Send()
+        {
+            foreach (var block in blocksToSend)
+            {
+                connection.Send(Encoding.ASCII.GetBytes(block.ToString()));
+                if (block.Code == (int)BlockCode.Disconnect)
+                {
+                    connection.Close();
+                    status = Status.Disconnect;
+                    break;
+                }
+            }
+            blocksToSend.Clear();
+        }
+        private static void CloseConnection()
+        {
+            timer.Stop();
+            connection.Close();
+            status = Status.Disconnect;
+            ChangeStatus(status.ToString());
+            CloseAllFormsWhileLogin();
+        }
+
         private static void Tick(object sender, EventArgs e)
         {
             mesLength = connection.Available;
             if (mesLength == 0)
             {
                 CheckTimeOut();
-                return;
+                //return;
             }
-            timeOut = 0;
-            recievedBytes = new byte[mesLength];
-            connection.Receive(recievedBytes);
-            inpBlocks = Encoding.ASCII.GetString(recievedBytes)
-                .Split(new char[] { '\0' }, StringSplitOptions.RemoveEmptyEntries);
-            foreach (string block in inpBlocks)
+            else
             {
-                inpMessages = block
-                    .Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                int comNum = Convert.ToInt32(inpMessages[0]);
-                if (comNum != -1) Commands[comNum]();
-                else Error();
+                timeOut = 0;
+                recievedBytes = new byte[mesLength];
+                connection.Receive(recievedBytes);
+                inpBlocks = Encoding.ASCII.GetString(recievedBytes)
+                    .Split(new char[] { '\0' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (string block in inpBlocks)
+                {
+                    Block input = new Block(block);
+                    Commands[input.Code](input);
+                    //inpMessages = block
+                    //    .Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                    //int comNum = Convert.ToInt32(inpMessages[0]);
+                    //if (comNum != -1) Commands[comNum]();
+                    //else Error();
+                }
+                inpBlocks = null;
             }
-            inpBlocks = null;
-
+            
+            Send();
         }
         private static void CheckTimeOut()
         {
             timeOut++;
             if (timeOut >= 10 * Program.ups && status == Status.Play)
             {
-                SendAndDisconnect("-1\nTimeout!");
+                MessageBox.Show("TimeOut!");
+                //SendAndDisconnect("-1\nTimeout!");
             }
         }
 
-        public static void Send(string str)
+        //public static void Send(string str)
+        //{
+        //    if (!connection.Connected) Connect();
+        //    connection.Send(Encoding.ASCII.GetBytes(str + "\0"));
+        //}
+        //public static void SendAndDisconnect(string str)
+        //{
+        //    if (connection.Connected)
+        //    {
+        //        connection.Send(Encoding.ASCII.GetBytes(str));
+        //    }
+        //    Disconnect(str);
+        //}
+        //public static void Disconnect(string str="You Disconnected!")
+        //{
+        //    timer.Stop();
+        //    if (connection.Connected)
+        //    {
+        //        connection.Close();
+        //        MessageBox.Show(str, "Disconnect", MessageBoxButtons.OK);
+        //    }
+        //    status = Status.Disconnect;
+        //    ChangeStatus(status.ToString());
+        //    //need add go to login Form
+
+        //}
+
+        private static void Disconnect(Block block)
         {
-            if (!connection.Connected) Connect();
-            connection.Send(Encoding.ASCII.GetBytes(str + "\0"));
+            CloseConnection();
+            DisconectType state = (DisconectType)block.Type;
+            switch (state)
+            {
+                case DisconectType.Exit:
+                    MessageBox.Show("Exit!", state.ToString(),
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    break;
+                case DisconectType.Error:
+                    MessageBox.Show("Wrong Command!", state.ToString(),
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    break;
+                case DisconectType.Timeout:
+                    MessageBox.Show("Timeout!", state.ToString(),
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    break;
+                default:
+                    MessageBox.Show("Command Error!", state.ToString(),
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+                    break;
+            }
         }
-        public static void SendAndDisconnect(string str)
+        private static void Registration(Block block)
+        {
+            CloseConnection();
+            switch ((RegistrationType)block.Type)
+            {
+                case RegistrationType.CreateNewAcc:
+                    MessageBox.Show("Accaunt successfully created!", "Registration",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    break;
+                case RegistrationType.AccExists:
+                    MessageBox.Show("Account already exists!", "Registration",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    break;
+                case RegistrationType.Unknown:
+                    MessageBox.Show("Can not add accaunt in DataBase!", "Registration",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    break;
+                default:
+                    MessageBox.Show("Command Error!", "Registration",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    break;
+            }
+        }
+        private static void Login(Block block)
         {
             if (connection.Connected)
             {
-                connection.Send(Encoding.ASCII.GetBytes(str));
+                switch ((LoginType)block.Type)
+                {
+                    case LoginType.Access:
+                        MessageBox.Show("You Successfully login!", "Login",
+                                MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        status = Status.ChooseHero;
+                        ChangeStatus(status.ToString());
+                        break;
+                    case LoginType.PassError:
+                        MessageBox.Show("You enter wrong password!", "Login",
+                                MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        CloseConnection();
+                        break;
+                    case LoginType.Ban:
+                        MessageBox.Show("Your accaunt banned!", "Login",
+                                MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        CloseConnection();
+                        break;
+                    case LoginType.Unlogin:
+                        MessageBox.Show("Accaunt not verified!", "Login",
+                                MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        CloseConnection();
+                        break;
+                    case LoginType.Unknown:
+                        MessageBox.Show("Error in working DataBase!", "Login",
+                                MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        CloseConnection();
+                        break;
+                    default:
+                        MessageBox.Show("Command Error!", "Login",
+                                MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        CloseConnection();
+                        break;
+                }
             }
-            Disconnect(str);
-        }
-        public static void Disconnect(string str="You Disconnected!")
-        {
-            timer.Stop();
-            timer.Tick -= Tick;
-            if (connection.Connected)
+            else
             {
-                connection.Close();
-                MessageBox.Show(str, "Disconnect", MessageBoxButtons.OK);
+                MessageBox.Show("Connection Error", "Error", MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
             }
-            status = Status.Disconnect;
-            ChangeStatus(status.ToString());
-            //need add go to login Form
+        }
+        private static void ChooseHero(Block block)
+        {
+            ChooseHeroType type = (ChooseHeroType)block.Type;
+            switch (type)
+            {
+                case ChooseHeroType.Select:
+                    CloseAllFormsWhileLogin();
+                    Application.OpenForms[0].Hide();
+                    heroChoose = new HeroChoose(block.mes);
+                    heroChoose.Show();
+                    break;
+                case ChooseHeroType.CreateHero:
+                    MessageBox.Show("New Hero successfully created!", type.ToString(), 
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    break;
+                case ChooseHeroType.DeleteHero:
+                    MessageBox.Show("New Hero successfully created!", type.ToString(),
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    break;
+                case ChooseHeroType.HeroExists:
+                    MessageBox.Show("Hero with this name was created earlier!", type.ToString(),
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    break;
+                case ChooseHeroType.Unknown:
+                    MessageBox.Show("Error with working DataBase!", type.ToString(),
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    break;
+            }
+            //CloseAllFormsWhileLogin();
+            //if (Application.OpenForms[0].Visible) Application.OpenForms[0].Hide();
+            ////heroChoose = new HeroChoose(inpMessages);
+            //heroChoose.Show();
+        }
+        private static void Play(Block block)
+        {
 
-        }
-
-        private static void Registration()
-        {
-            Disconnect(inpMessages[1]);
-        }
-        private static void Login()
-        {
-            status = Status.ChooseHero;
-            ChangeStatus(status.ToString());
-        }
-        private static void ChooseHero()
-        {
-            CloseAllFormsWhileLogin();
-            if (Application.OpenForms[0].Visible) Application.OpenForms[0].Hide();
-            heroChoose = new HeroChoose(inpMessages);
-            heroChoose.Show();
-        }
-        private static void Error()
-        {
-            CloseAllFormsWhileLogin();
-            Disconnect(inpMessages[1]);
         }
 
         public static void OpenFormToCreateHero()
@@ -145,15 +299,18 @@ namespace GameClientV0
             {
                 for (int i = formsCount - 1; i > 0; i--)
                 {
-                    if (!(Application.OpenForms[i] is Form1)) Application.OpenForms[i].Close();
+                    if(Application.OpenForms[i] is Form1) Application.OpenForms[i].Show();
+                    else Application.OpenForms[i].Close();
                 }
             }
         }
         private static void CommandsFiller()
         {
+            Commands.Add(Disconnect);
             Commands.Add(Registration);
             Commands.Add(Login);
             Commands.Add(ChooseHero);
+            Commands.Add(Play);
         }
     }
 }

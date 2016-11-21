@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Net.Sockets;
 using System.Net;
+using game.Net.Protocol;
 
 namespace GameClientV0
 {
@@ -21,18 +22,24 @@ namespace GameClientV0
 
         private void login_btn_Click(object sender, EventArgs e)
         {
-            OnlineUser.Send("1\n" + loginBox.Text + "\t" + pswdBox.Text);
+            OnlineUser.Connect();
+            string login = loginBox.Text + "\t" + pswdBox.Text;
+            OnlineUser.BlockToSend(new Block(BlockCode.Login, (int)LoginType.Access, login));
         }
 
         private void reg_btn_Click(object sender, EventArgs e)
         {
-            OnlineUser.Send("0\n" + loginBox.Text + "\t" + pswdBox.Text);
+            OnlineUser.Connect();
+            string login = loginBox.Text + "\t" + pswdBox.Text;
+            OnlineUser.BlockToSend(new Block(BlockCode.Registration, 
+                (int)RegistrationType.CreateNewAcc, login));
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
             if (OnlineUser.status == OnlineUser.Status.Connected)
-            OnlineUser.SendAndDisconnect("-1\nDisconnect.");
+            //OnlineUser.SendAndDisconnect("-1\nDisconnect.");
+            OnlineUser.BlockToSend(new Block(BlockCode.Disconnect, (int)DisconectType.Exit));
         }
         public void StatusChanger(string status)
         {

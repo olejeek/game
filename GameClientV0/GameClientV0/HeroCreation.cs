@@ -96,7 +96,7 @@ namespace GameClientV0
                 answer.Append((10-STRvsINT.Value) + "\t");
                 answer.Append((10 - VITvsDEX.Value) + "\t");
                 answer.Append((10 - AGIvsLUK.Value));
-                OnlineUser.Send(answer.ToString());
+                //OnlineUser.Send(answer.ToString());
             }
             else MessageBox.Show("You don`t write hero name!");
         }

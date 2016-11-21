@@ -7,17 +7,18 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using game.Net.Protocol;
 
 namespace GameClientV0
 {
     public partial class HeroChoose : Form
     {
         List<HeroInfo> hero;
-        public HeroChoose(string[] heroes)
+        public HeroChoose(List<string> heroes)
         {
             InitializeComponent();
             hero = new List<HeroInfo>();
-            for (int i = 1; i < heroes.Length; i++)
+            for (int i = 1; i < heroes.Count; i++)
             {
                 hero.Add(new HeroInfo(heroes[i]));
                 ListViewItem heroListItem = new ListViewItem( hero[i - 1].ToListView());
@@ -27,7 +28,7 @@ namespace GameClientV0
 
         private void HeroChoose_FormClosed(object sender, FormClosedEventArgs e)
         {
-            OnlineUser.SendAndDisconnect("-1\nDisconnect!");
+            //OnlineUser.SendAndDisconnect("-1\nDisconnect!");
             if (Application.OpenForms.Count<=1) Application.OpenForms[0].Show();
         }
 
