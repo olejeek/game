@@ -26,14 +26,15 @@
   - Riding;
 4. Network class:
   - Development of communication protocols;
-  - Reception and transmission of data to multiple streams;
+  - Reception and transmission of data to multiple streams; **Done!** (may be)
   - Server load testing.
 5. Loot class:
   - Add derived class of Equip;
   - Some options of loot;
 6. Database:
-  - Table with mobs;
-  - Table with players;
+  - Table with accaunts; **Done!**
+  - Table with mobs; **Done!**
+  - Table with players; **Done!**
   - List of skills (only C#).
   - Table with loots;
   
@@ -44,11 +45,13 @@
   
   P.S.
  Protocol must transmit:
-  - login;
-  - actions and skills;
+  - registration; **Done!**
+  - login; **Done!**
+  - create person; **Done!**
+  - delete person; **Done!**
+  - select person (go to the world);
+  - using actions and skills;
   - stats upgrade;
   - skills upgrade;
-  - create person;
-  - delete person;
   - change equip;
   - using loot.
