@@ -42,9 +42,23 @@ namespace GameClientV0
 
         public static void BlockToSend(Block block)
         {
-            blocksToSend.Add(block);
+            if (block.Code != (int)BlockCode.Disconnect) blocksToSend.Add(block);
+            else
+            {
+                try
+                {
+                    connection.Send(Encoding.ASCII.GetBytes(block.ToString()));
+                    connection.Close();
+                }
+                catch
+                {
+                    MessageBox.Show("Server Disabled", "Server Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    if (connection.Connected) CloseConnection();
+                }
+                status = Status.Disconnect;
+            }
         }
-
         public static void Connect()
         {
             try
@@ -65,22 +79,28 @@ namespace GameClientV0
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-
         private static void Send()
         {
             foreach (var block in blocksToSend)
             {
-                connection.Send(Encoding.ASCII.GetBytes(block.ToString()));
-                if (block.Code == (int)BlockCode.Disconnect)
+                try
                 {
-                    connection.Close();
-                    status = Status.Disconnect;
-                    break;
+                    connection.Send(Encoding.ASCII.GetBytes(block.ToString()));
                 }
+                catch
+                {
+                    MessageBox.Show("Server Disabled", "Server Error", 
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    if (connection.Connected)
+                    {
+                        CloseConnection();
+                    }
+                }
+                
             }
             blocksToSend.Clear();
         }
-        private static void CloseConnection()
+        public static void CloseConnection()
         {
             timer.Stop();
             connection.Close();
@@ -108,15 +128,9 @@ namespace GameClientV0
                 {
                     Block input = new Block(block);
                     Commands[input.Code](input);
-                    //inpMessages = block
-                    //    .Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                    //int comNum = Convert.ToInt32(inpMessages[0]);
-                    //if (comNum != -1) Commands[comNum]();
-                    //else Error();
                 }
                 inpBlocks = null;
             }
-            
             Send();
         }
         private static void CheckTimeOut()
@@ -125,7 +139,7 @@ namespace GameClientV0
             if (timeOut >= 10 * Program.ups && status == Status.Play)
             {
                 MessageBox.Show("TimeOut!");
-                //SendAndDisconnect("-1\nTimeout!");
+                BlockToSend(new Block(BlockCode.Disconnect, (int)DisconnectType.Timeout));
             }
         }
 
@@ -159,18 +173,18 @@ namespace GameClientV0
         private static void Disconnect(Block block)
         {
             CloseConnection();
-            DisconectType state = (DisconectType)block.Type;
+            DisconnectType state = (DisconnectType)block.Type;
             switch (state)
             {
-                case DisconectType.Exit:
+                case DisconnectType.Exit:
                     MessageBox.Show("Exit!", state.ToString(),
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
                     break;
-                case DisconectType.Error:
+                case DisconnectType.Error:
                     MessageBox.Show("Wrong Command!", state.ToString(),
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
                     break;
-                case DisconectType.Timeout:
+                case DisconnectType.Timeout:
                     MessageBox.Show("Timeout!", state.ToString(),
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
                     break;
@@ -255,14 +269,27 @@ namespace GameClientV0
             switch (type)
             {
                 case ChooseHeroType.Select:
-                    CloseAllFormsWhileLogin();
-                    Application.OpenForms[0].Hide();
-                    heroChoose = new HeroChoose(block.mes);
-                    heroChoose.Show();
+                    if ((heroChoose == null)? true:(!heroChoose.Created))
+                    {
+                        //CloseAllFormsWhileLogin();
+                        Application.OpenForms[0].Hide();
+                        heroChoose = new HeroChoose(block.mes);
+                        heroChoose.Show();
+                    }
+                    else
+                    {
+                        heroChoose.HeroUpdate(block.mes);
+                        heroChoose.Show();
+                    }
+                    
                     break;
                 case ChooseHeroType.CreateHero:
                     MessageBox.Show("New Hero successfully created!", type.ToString(), 
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    if (heroCreation != null)
+                    {
+                        heroCreation.Close();
+                    }
                     break;
                 case ChooseHeroType.DeleteHero:
                     MessageBox.Show("New Hero successfully created!", type.ToString(),
@@ -277,10 +304,6 @@ namespace GameClientV0
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
                     break;
             }
-            //CloseAllFormsWhileLogin();
-            //if (Application.OpenForms[0].Visible) Application.OpenForms[0].Hide();
-            ////heroChoose = new HeroChoose(inpMessages);
-            //heroChoose.Show();
         }
         private static void Play(Block block)
         {
@@ -292,16 +315,13 @@ namespace GameClientV0
             heroCreation = new HeroCreation();
             heroCreation.Show();
         }
-        private static void CloseAllFormsWhileLogin()
+        public static void CloseAllFormsWhileLogin()
         {
             int formsCount = Application.OpenForms.Count;
-            if (formsCount > 1)
+            for (int i = formsCount - 1; i >= 0; i--)
             {
-                for (int i = formsCount - 1; i > 0; i--)
-                {
-                    if(Application.OpenForms[i] is Form1) Application.OpenForms[i].Show();
-                    else Application.OpenForms[i].Close();
-                }
+                if (Application.OpenForms[i] is Form1) Application.OpenForms[i].Show();
+                else Application.OpenForms[i].Close();
             }
         }
         private static void CommandsFiller()

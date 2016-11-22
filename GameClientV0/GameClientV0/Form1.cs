@@ -26,7 +26,6 @@ namespace GameClientV0
             string login = loginBox.Text + "\t" + pswdBox.Text;
             OnlineUser.BlockToSend(new Block(BlockCode.Login, (int)LoginType.Access, login));
         }
-
         private void reg_btn_Click(object sender, EventArgs e)
         {
             OnlineUser.Connect();
@@ -34,12 +33,10 @@ namespace GameClientV0
             OnlineUser.BlockToSend(new Block(BlockCode.Registration, 
                 (int)RegistrationType.CreateNewAcc, login));
         }
-
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (OnlineUser.status == OnlineUser.Status.Connected)
-            //OnlineUser.SendAndDisconnect("-1\nDisconnect.");
-            OnlineUser.BlockToSend(new Block(BlockCode.Disconnect, (int)DisconectType.Exit));
+            if (OnlineUser.status != OnlineUser.Status.Disconnect)
+            OnlineUser.BlockToSend(new Block(BlockCode.Disconnect, (int)DisconnectType.Exit));
         }
         public void StatusChanger(string status)
         {

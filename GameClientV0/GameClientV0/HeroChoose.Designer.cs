@@ -49,7 +49,7 @@
             // 
             // createHero_btn
             // 
-            this.createHero_btn.Location = new System.Drawing.Point(240, 214);
+            this.createHero_btn.Location = new System.Drawing.Point(271, 213);
             this.createHero_btn.Name = "createHero_btn";
             this.createHero_btn.Size = new System.Drawing.Size(75, 23);
             this.createHero_btn.TabIndex = 0;
@@ -59,19 +59,20 @@
             // 
             // delHero_btn
             // 
-            this.delHero_btn.Location = new System.Drawing.Point(556, 214);
+            this.delHero_btn.Location = new System.Drawing.Point(519, 214);
             this.delHero_btn.Name = "delHero_btn";
             this.delHero_btn.Size = new System.Drawing.Size(75, 23);
             this.delHero_btn.TabIndex = 1;
             this.delHero_btn.Text = "Delete Hero";
             this.delHero_btn.UseVisualStyleBackColor = true;
+            this.delHero_btn.Click += new System.EventHandler(this.delHero_btn_Click);
             // 
             // groupBox1
             // 
             this.groupBox1.Controls.Add(this.heroListView);
             this.groupBox1.Location = new System.Drawing.Point(12, 12);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(620, 196);
+            this.groupBox1.Size = new System.Drawing.Size(591, 196);
             this.groupBox1.TabIndex = 2;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Hero List";
@@ -90,11 +91,14 @@
             this.hBLvl,
             this.hJLvl,
             this.hLoc});
+            this.heroListView.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable;
+            this.heroListView.LabelWrap = false;
             this.heroListView.Location = new System.Drawing.Point(6, 19);
             this.heroListView.Name = "heroListView";
-            this.heroListView.Size = new System.Drawing.Size(263, 171);
+            this.heroListView.Size = new System.Drawing.Size(576, 171);
             this.heroListView.TabIndex = 0;
             this.heroListView.UseCompatibleStateImageBehavior = false;
+            this.heroListView.View = System.Windows.Forms.View.Details;
             // 
             // hName
             // 
@@ -167,12 +171,13 @@
             this.play_btn.TabIndex = 3;
             this.play_btn.Text = "Play!";
             this.play_btn.UseVisualStyleBackColor = true;
+            this.play_btn.Click += new System.EventHandler(this.play_btn_Click);
             // 
             // HeroChoose
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(643, 248);
+            this.ClientSize = new System.Drawing.Size(614, 248);
             this.Controls.Add(this.play_btn);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.delHero_btn);

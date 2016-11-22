@@ -25,7 +25,7 @@ namespace game.Net.Protocol
     //  From Client: send hero actions
     //  From Server: send world information
     //--------------------------------
-    public enum DisconectType { Exit, Error = -1, Timeout = -2 }
+    public enum DisconnectType { Exit, Error = -1, Timeout = -2 }
     //-----Disconnect Description-----
     //0. Exit.
     //  From Client: end of work
@@ -67,7 +67,7 @@ namespace game.Net.Protocol
     //  From Client: not use
     //  From Server: error in work with database
     //---------------------------
-    public enum ChooseHeroType { Select, CreateHero, DeleteHero, HeroExists = -1, Unknown = -2 }
+    public enum ChooseHeroType { Select, CreateHero, DeleteHero, HeroExists = -1, UnableDel = -2, Unknown = -3 }
     //-----ChooseHero Description-----
     //0. Select.
     //  From Client: user select hero
@@ -134,6 +134,17 @@ namespace game.Net.Protocol
         {
             this.Type = type;
             mes.Add(message);
+        }
+        public void Add(string[] messages)
+        {
+            StringBuilder rez = new StringBuilder();
+            foreach (string message in messages)
+            {
+                rez.Append(message);
+                rez.Append('\t');
+            }
+            rez.Remove(rez.Length - 1, 1);
+            mes.Add(rez.ToString());
         }
 
         public override string ToString()

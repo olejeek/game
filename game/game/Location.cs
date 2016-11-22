@@ -27,8 +27,6 @@ namespace game
 
             Enabled = false;
             this.Id = id;
-            //persons = new LinkedList<Person>();
-            //--------------------------------------
             personsOnMap = new List<Person>[mapSizeX+1, mapSizeY+1];
             for (int x = 0; x <= mapSizeX; x++)
             {

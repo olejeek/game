@@ -18,23 +18,43 @@ namespace GameClientV0
         {
             InitializeComponent();
             hero = new List<HeroInfo>();
-            for (int i = 1; i < heroes.Count; i++)
+            for (int i = 0; i < heroes.Count; i++)
             {
                 hero.Add(new HeroInfo(heroes[i]));
-                ListViewItem heroListItem = new ListViewItem( hero[i - 1].ToListView());
+                ListViewItem heroListItem = new ListViewItem(hero[i].ToListView());
+                heroListView.Items.Add(heroListItem);
+            }
+        }
+        public void HeroUpdate(List<string> heroes)
+        {
+            heroListView.Items.Clear();
+            hero = new List<HeroInfo>();
+            for (int i = 0; i < heroes.Count; i++)
+            {
+                hero.Add(new HeroInfo(heroes[i]));
+                ListViewItem heroListItem = new ListViewItem(hero[i].ToListView());
                 heroListView.Items.Add(heroListItem);
             }
         }
 
         private void HeroChoose_FormClosed(object sender, FormClosedEventArgs e)
         {
-            //OnlineUser.SendAndDisconnect("-1\nDisconnect!");
-            if (Application.OpenForms.Count<=1) Application.OpenForms[0].Show();
+            if (OnlineUser.status != OnlineUser.Status.Disconnect)
+                OnlineUser.BlockToSend(new Block(BlockCode.Disconnect, (int)DisconnectType.Exit));
+            OnlineUser.CloseConnection();
         }
 
         private void createHero_btn_Click(object sender, EventArgs e)
         {
             OnlineUser.OpenFormToCreateHero();
+        }
+        private void delHero_btn_Click(object sender, EventArgs e)
+        {
+            //string name = heroListView.SelectedItems[0].Text;
+            //MessageBox.Show(name);
+            Block del = new Block(BlockCode.ChooseHero, (int)ChooseHeroType.DeleteHero);
+            OnlineUser.BlockToSend(new Block(BlockCode.ChooseHero, (int)ChooseHeroType.DeleteHero,
+                heroListView.SelectedItems[0].Text));
         }
 
         struct HeroInfo
@@ -55,6 +75,11 @@ namespace GameClientV0
             {
                 return parametres;
             }
+        }
+
+        private void play_btn_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

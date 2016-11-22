@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using game.Net.Protocol;
 
 namespace GameClientV0
 {
@@ -28,7 +29,6 @@ namespace GameClientV0
                 toolTip1.SetToolTip(STRvsINT, "STR: " + STRvsINT.Value + "\tINT: " + (10 - STRvsINT.Value));
             }
         }
-
         private void agiBtn_Click(object sender, EventArgs e)
         {
             if (AGIvsLUK.Value != 9)
@@ -37,7 +37,6 @@ namespace GameClientV0
                 toolTip1.SetToolTip(AGIvsLUK, "AGI: " + AGIvsLUK.Value + "\tLUK: " + (10 - AGIvsLUK.Value));
             }
         }
-
         private void lukBtn_Click(object sender, EventArgs e)
         {
             if (AGIvsLUK.Value != 1)
@@ -46,7 +45,6 @@ namespace GameClientV0
                 toolTip1.SetToolTip(AGIvsLUK, "AGI: " + AGIvsLUK.Value + "\tLUK: " + (10 - AGIvsLUK.Value));
             }
         }
-
         private void vitBtn_Click(object sender, EventArgs e)
         {
             if (VITvsDEX.Value != 9)
@@ -55,7 +53,6 @@ namespace GameClientV0
                 toolTip1.SetToolTip(VITvsDEX, "VIT: " + VITvsDEX.Value + "\tDEX: " + (10 - VITvsDEX.Value));
             }
         }
-
         private void dexBtn_Click(object sender, EventArgs e)
         {
             if (VITvsDEX.Value != 1)
@@ -77,26 +74,23 @@ namespace GameClientV0
         {
             Close();
         }
-
         private void HeroCreation_FormClosing(object sender, FormClosingEventArgs e)
         {
 
         }
-
         private void createBtn_Click(object sender, EventArgs e)
         {
             if (nameBox.Text.Length != 0)
             {
-                StringBuilder answer = new StringBuilder();
-                answer.Append("2\n");
-                answer.Append(nameBox.Text + "\t");
-                answer.Append(STRvsINT.Value + "\t");
-                answer.Append(AGIvsLUK.Value + "\t");
-                answer.Append(VITvsDEX.Value + "\t");
-                answer.Append((10-STRvsINT.Value) + "\t");
-                answer.Append((10 - VITvsDEX.Value) + "\t");
-                answer.Append((10 - AGIvsLUK.Value));
-                //OnlineUser.Send(answer.ToString());
+                Block newHero = new Block(BlockCode.ChooseHero, (int)ChooseHeroType.CreateHero);
+                newHero.Add(nameBox.Text);
+                newHero.Add(STRvsINT.Value.ToString());
+                newHero.Add(AGIvsLUK.Value.ToString());
+                newHero.Add(VITvsDEX.Value.ToString());
+                newHero.Add((10 - STRvsINT.Value).ToString());
+                newHero.Add((10 - VITvsDEX.Value).ToString());
+                newHero.Add((10 - AGIvsLUK.Value).ToString());
+                OnlineUser.BlockToSend(newHero);
             }
             else MessageBox.Show("You don`t write hero name!");
         }

@@ -12,8 +12,7 @@ namespace game.NetHandler
     class OnlineUser
     {
         
-        string db =
-                        @"Provider=Microsoft.Jet.OLEDB.4.0; Data Source=Ragnarok.mdb";
+        string db = @"Provider=Microsoft.Jet.OLEDB.4.0; Data Source=Ragnarok.mdb";
         public enum Status { Disconnect, Connected, Login, Play}
         Socket connection;
         public Status status { get; private set; }
@@ -54,7 +53,7 @@ namespace game.NetHandler
             foreach (var block in blocksToSend)
             {
                 connection.Send(Encoding.ASCII.GetBytes(block.ToString()));
-                if (block.Code == (int)BlockCode.Disconnect || block.Type < 0)
+                if (block.Code == (int)BlockCode.Disconnect)
                 {
                     Disconnect(block);
                     break;
@@ -116,9 +115,13 @@ namespace game.NetHandler
 
         private void CheckTimeOut()
         {
-            TimeSpan delta = lastInput - DateTime.Now;
-            if (delta.Minutes > 5) blocksToSend.Add(new Block(BlockCode.Disconnect, 
-                (int)DisconectType.Timeout));
+            TimeSpan delta = DateTime.Now - lastInput;
+            if (delta.Minutes > 5)
+            {
+                blocksToSend.Add(new Block(BlockCode.Disconnect,
+                (int)DisconnectType.Timeout));
+                Send();
+            }
         }
         //First Level messages
         private void Disconnect(Block block)
@@ -133,11 +136,12 @@ namespace game.NetHandler
             if (status != Status.Connected)
             {
                 blocksToSend.Add(new Block(BlockCode.Disconnect, 
-                    (int)DisconectType.Error));
+                    (int)DisconnectType.Error));
                 //SendAndDisconnect(BlockType.Disconnect, BlockRez.Error, "Connection Error");
                 return;
             }
-            string[] logins = block.mes[0].Split(new char[] { '\t' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] logins = block.mes[0].Split(new char[] { '\t' }, 
+                StringSplitOptions.RemoveEmptyEntries);
             Block regBlock = new Block(BlockCode.Registration);
             using (OleDbConnection dbConnect = new OleDbConnection(db))
             {
@@ -189,7 +193,7 @@ namespace game.NetHandler
         {
             if (status != Status.Connected)
             {
-                blocksToSend.Add(new Block(BlockCode.Disconnect, (int)DisconectType.Error));
+                blocksToSend.Add(new Block(BlockCode.Disconnect, (int)DisconnectType.Error));
                 //SendAndDisconnect(((int)BlockCode.Error).ToString()+"\nConnection Error");
                 return;
             }
@@ -199,8 +203,6 @@ namespace game.NetHandler
             {
                 dbConnect.Open();
                 string command = "SELECT * FROM users WHERE login='" + logins[0] + "';";
-                //string command = "SELECT * FROM users WHERE login='"
-                //    + logins[0] + "' AND pswd='" + logins[1] + "'";
                 OleDbCommand cmd = new OleDbCommand(command, dbConnect);
                 OleDbDataReader reader = cmd.ExecuteReader();
                 if (reader.Read())
@@ -226,7 +228,6 @@ namespace game.NetHandler
                         blocksToSend.Add(logBlock);
                         dbConnect.Close();
                         return;
-                        //SendAndDisconnect(((int)BlockCode.Error).ToString()+"\n" + answer );
                     }
                     else
                     {
@@ -239,9 +240,8 @@ namespace game.NetHandler
                         logBlock.Add((int)LoginType.Access);
                         blocksToSend.Add(logBlock);
                         dbConnect.Close();
+                        blocksToSend.Add(HeroesList());
                         return;
-                        //Send(((int)BlockCode.Login).ToString()+"\n" + answer );
-                        //Send( HeroesList(dbConnect));
                     }
                 }
                 else
@@ -263,23 +263,30 @@ namespace game.NetHandler
         {
             if (status != Status.Login)
             {
-                blocksToSend.Add(new Block(BlockCode.Disconnect, (int)DisconectType.Error));
-                //SendAndDisconnect(((int)BlockCode.Error).ToString()+"\nConnection Error");
+                blocksToSend.Add(new Block(BlockCode.Disconnect, (int)DisconnectType.Error));
                 return;
             }
             ChooseHeroType type = (ChooseHeroType)block.Type;
             switch(type)
             {
-                case ChooseHeroType.Select: break;
-                case ChooseHeroType.CreateHero: break;
-                case ChooseHeroType.DeleteHero: break;
+                case ChooseHeroType.Select:
+                    break;
+                case ChooseHeroType.CreateHero:
+                    blocksToSend.Add(CreateHero(block));
+                    blocksToSend.Add(HeroesList());
+                    break;
+                case ChooseHeroType.DeleteHero:
+                    blocksToSend.Add(DeleteHero(block));
+                    blocksToSend.Add(HeroesList());
+                    break;
+
             }
         }
         private void Play(Block block)
         {
             if (status != Status.Login)
             {
-                blocksToSend.Add(new Block(BlockCode.Disconnect, (int)DisconectType.Error));
+                blocksToSend.Add(new Block(BlockCode.Disconnect, (int)DisconnectType.Error));
                 //SendAndDisconnect(((int)BlockCode.Error).ToString()+"\nConnection Error");
                 return;
             }
@@ -303,8 +310,6 @@ namespace game.NetHandler
                     Console.ResetColor();
                     dbConnect.Close();
                     return nHero;
-                    //Send(((int)BlockCode.CreateHero).ToString() + "\n" + ((int)BlockCode.Error).ToString() +
-                    //    "-1\tHero with name " + reader[0] + " was created early.");
                 }
                 else
                 {
@@ -321,7 +326,6 @@ namespace game.NetHandler
                         Console.ResetColor();
                         dbConnect.Close();
                         return nHero;
-                        //Send("2\n0\tHero " + param[0] + " successfully created.");
                     }
                     else
                     {
@@ -331,98 +335,75 @@ namespace game.NetHandler
                         Console.ResetColor();
                         dbConnect.Close();
                         return nHero;
-                        //Send("2\n-1\nError with creating hero.");
                     }
                 }
 
             }
         }
-
-        //private void CreateHero()
-        //{
-        //    if (status != Status.Login)
-        //    {
-        //        blocksToSend.Add(new Block(BlockCode.Login, (int)LoginType.Unlogin);
-        //        //SendAndDisconnect(((int)BlockCode.Error).ToString()+"\nConnection Error");
-        //        //SendAndDisconnect("-1\nConnection Error");
-        //        return;
-        //    }
-        //    //string[] param = DevidedLevel2(inpMessage[1]);
-        //    string[] param = inpMessage[1].Split('\t');
-        //    Block crhBlock = new Block(BlockCode.);
-        //    using (OleDbConnection dbConnect = new OleDbConnection(db))
-        //    {
-        //        dbConnect.Open();
-        //        string command = "SELECT name FROM players WHERE name='" + param[0] + "';";
-        //        OleDbCommand cmd = new OleDbCommand(command, dbConnect);
-        //        OleDbDataReader reader = cmd.ExecuteReader();
-        //        if (reader.Read())
-        //        {
-        //            Console.ForegroundColor = ConsoleColor.Red;
-        //            Console.WriteLine("Hero with name {0} was created early.", reader[0]);
-        //            Console.ResetColor();
-        //            Send(((int)BlockCode.CreateHero).ToString()+"\n"+ ((int)BlockCode.Error).ToString() + 
-        //                "-1\tHero with name " + reader[0] + " was created early.");
-        //        }
-        //        else
-        //        {
-        //            command = string.Format("INSERT INTO players([loginId], [name], [str], [agi], "+
-        //                "[vit], [int], [dex], [luk]) VALUES ({0}, \'{1}\', {2}, {3}, {4}, {5}, {6}, {7});",
-        //               loginId, param[0], param[1], param[2], param[3], param[4], param[5], param[6]);
-        //            cmd = new OleDbCommand(command, dbConnect);
-        //            if (cmd.ExecuteNonQuery() == 1)
-        //            {
-        //                Console.ForegroundColor = ConsoleColor.Green;
-        //                Console.WriteLine("ID: {0} create new hero - {0}", loginId, param[0]);
-        //                Console.ResetColor();
-        //                Send("2\n0\tHero " + param[0] + " successfully created.");
-        //            }
-        //            else
-        //            {
-        //                Console.ForegroundColor = ConsoleColor.Red;
-        //                Console.WriteLine("Error add new hero");
-        //                Console.ResetColor();
-        //                Send("2\n-1\nError with creating hero.");
-        //            }
-        //        }
-        //        dbConnect.Close();
-        //    }
-
-        //}
-        private void DeleteHero()
+        private Block DeleteHero(Block block)
         {
             if (status != Status.Login)
             {
-                //SendAndDisconnect("-1\nConnection Error");
-                return;
+                return new Block(BlockCode.Disconnect, (int)DisconnectType.Error);
+            }
+            Block delHero = new Block(BlockCode.ChooseHero);
+            using (OleDbConnection dbConnect = new OleDbConnection(db))
+            {
+                dbConnect.Open();
+                string command = "SELECT name FROM players WHERE name='" + block.mes[0] +
+                    "' AND loginId=" + loginId + ";";
+                OleDbCommand cmd = new OleDbCommand(command, dbConnect);
+                OleDbDataReader reader = cmd.ExecuteReader();
+                if (reader.Read())
+                {
+                    command = "DELETE FROM players WHERE name='" + block.mes[0] +
+                    "' AND loginId=" + loginId + ";";
+                    cmd = new OleDbCommand(command, dbConnect);
+                    int i = cmd.ExecuteNonQuery();
+                    if (i == 1)
+                    {
+                        delHero.Add((int)ChooseHeroType.DeleteHero);
+                        return delHero;
+                    }
+                    else
+                    {
+                        delHero.Add((int)ChooseHeroType.Unknown);
+                        return delHero;
+                    }
+                }
+                else
+                {
+                    delHero.Add((int)ChooseHeroType.UnableDel);
+                    return delHero;
+                }
             }
         }
-        private string HeroesList(OleDbConnection dbConnect)
+        private Block HeroesList()
         {
-            StringBuilder heroInfo = new StringBuilder();
-            heroInfo.Append("2\n");
-            if (dbConnect.State== System.Data.ConnectionState.Open)
+            Block hl = new Block(BlockCode.ChooseHero, (int)ChooseHeroType.Select);
+            using (OleDbConnection dbConnect = new OleDbConnection(db))
             {
-                string command = "SELECT id, name, classId, str, agi, vit, int, dex, luk,"+
-                    "baseLvl, jobLvl, locId AS HeroInfo FROM players WHERE loginid=" + loginId + ";";
+                dbConnect.Open();
+                string command = "SELECT id, name, classId, str, agi, vit, int, dex, luk," +
+                        "baseLvl, jobLvl, locId AS HeroInfo FROM players WHERE loginid=" + loginId + ";";
                 OleDbCommand cmd = new OleDbCommand(command, dbConnect);
                 OleDbDataReader reader = cmd.ExecuteReader();
                 while (reader.Read())
                 {
+                    StringBuilder heroInfo = new StringBuilder();
                     for (int i = 0; i < reader.FieldCount; i++)
                     {
                         heroInfo = heroInfo.Append(reader[i].ToString());
                         heroInfo = heroInfo.Append('\t');
                     }
-                    heroInfo.Append('\n');
+                    hl.Add(heroInfo.ToString());
                 }
             }
-            heroInfo.Append('\0');
-            return heroInfo.ToString();
+            return hl;
         }
 
         //Disconnect, Registration, Login, ChooseHero, Play
-    private void CommandsFiller()
+        private void CommandsFiller()
         {
             Commands = new List<Action<Block>>();
             Commands.Add(Disconnect);
